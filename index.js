@@ -1,7 +1,15 @@
 const { Client, GatewayIntentBits } = require('discord.js');
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 require('dotenv').config();
+
+const TEN_MINUTES = 1000 * 60 * 10;
+
+/// Express things
+const express = require('express')
+const app = express()
+const port = 9000
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
 
 // Discord.js
 client.on('ready', () => {
@@ -17,11 +25,6 @@ client.on('ready', () => {
 
 client.login(process.env.DISCORD_TOKEN);
 
-/// Express things
-const express = require('express')
-const app = express()
-const port = 9000
-
 app.use(express.urlencoded({ extended: true }));
 
 const timeout = () => {
@@ -35,13 +38,12 @@ const timeout = () => {
 } 
 
 // Timer to set sensor dead message
-let timer = setTimeout(timeout, 1000*60);
+let timer = setTimeout(timeout, TEN_MINUTES);
 
 // Old http method
 // TODO: Use mqtt
 app.post('/commonRoom/status', (req, res) => {
-    const time = new Date();
-    console.log(time.toUTCString() + ": " + JSON.stringify(req.body));
+    console.log(JSON.stringify(req.body));
     if (req.body.code == process.env.STATUS_PWD) {
         if (req.body.state == '1') {
             client.user.setPresence({
@@ -63,7 +65,7 @@ app.post('/commonRoom/status', (req, res) => {
 
         // Reset timer
         clearTimeout(timer)
-        timer = setTimeout(timeout, 1000*60);
+        timer = setTimeout(timeout, TEN_MINUTES);
         res.end(req.body.status)
     } else {
         res.end("Invalid code")
