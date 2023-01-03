@@ -4,7 +4,7 @@ import registerCommands from './commandRegistry'
 
 export async function initDiscord (): Promise<Client<true>> {
   return await new Promise((resolve, reject) => {
-    config()
+    config({ path: '/etc/crobot/.env' })
 
     const client = new Client({ intents: [GatewayIntentBits.Guilds] })
     client.maintainers = new Set<GuildMember>()

@@ -9,7 +9,7 @@ async function main (): Promise<void> {
 
   const commands = []
   // Grab all the command files from the commands directory you created earlier
-  let commandFiles = await fs.readdir('./commands')
+  let commandFiles = await fs.readdir('/usr/local/libexec/crobot/dist/commands/')
   commandFiles = commandFiles.filter(file => file.endsWith('.js'))
 
   // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment

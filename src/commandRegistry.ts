@@ -5,7 +5,7 @@ import * as fs from 'fs/promises'
 export default async function registerCommands (client: Client): Promise<void> {
   client.commands = new Collection()
 
-  const commandsPath = path.join(__dirname, 'commands')
+  const commandsPath = '/usr/local/libexec/crobot/dist/commands/'
   let commandFiles = await fs.readdir(commandsPath)
   commandFiles = commandFiles.filter((file) => file.endsWith('.js'))
 
