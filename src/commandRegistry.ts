@@ -43,7 +43,7 @@ export default async function registerCommands (client: Client): Promise<void> {
         maintainersText += `Please ping ${maintainers[0]}.`
       } else if (maintainers.length > 1) {
         maintainers[maintainers.length - 1] = 'or ' + maintainers[maintainers.length - 1]
-        maintainersText = maintainers.join(', ')
+        maintainersText = 'Please ping ' + maintainers.join(', ')
       }
       await interaction.reply({ content: `There was an error while executing this command! ${maintainersText}`, ephemeral: true })
     }
