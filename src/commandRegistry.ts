@@ -1,16 +1,16 @@
 import { Client, Collection, Events } from 'discord.js'
-import path from 'path'
 import * as fs from 'fs/promises'
+import path from 'path'
 
 export default async function registerCommands (client: Client): Promise<void> {
   client.commands = new Collection()
 
-  const commandsPath = '/usr/local/libexec/crobot/dist/commands/'
+  const commandsPath = process.env.NODE_ENV === 'development' ? './dist/commands/' : '/usr/local/libexec/crobot/dist/commands/'
   let commandFiles = await fs.readdir(commandsPath)
   commandFiles = commandFiles.filter((file) => file.endsWith('.js'))
 
   await Promise.all(commandFiles.map(async (file) => {
-    const filePath = path.join(commandsPath, file)
+    const filePath = process.env.NODE_ENV === 'development' ? '.' + commandsPath + file : path.join(commandsPath, file)
     const command = await import(filePath)
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Weird eslint misfire ¯\_(ツ)_/¯
     if (Object.hasOwn(command, 'data') && Object.hasOwn(command, 'execute')) {

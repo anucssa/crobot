@@ -5,11 +5,11 @@ import fs from 'fs/promises'
 import { config } from 'dotenv'
 
 async function main (): Promise<void> {
-  config({ path: '/etc/crobot/.env' })
+  config({ path: process.env.NODE_ENV === 'development' ? './.env' : '/etc/crobot/.env' })
 
   const commands = []
   // Grab all the command files from the commands directory you created earlier
-  let commandFiles = await fs.readdir('/usr/local/libexec/crobot/dist/commands/')
+  let commandFiles = await fs.readdir(process.env.NODE_ENV === 'development' ? './dist/commands/' : '/usr/local/libexec/crobot/dist/commands/')
   commandFiles = commandFiles.filter(file => file.endsWith('.js'))
 
   // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment

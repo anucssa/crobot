@@ -78,14 +78,14 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
   })
 
   collector.on('collect', async (i) => {
-    if (pronounRoles.includes(i.id)) {
+    if (pronounRoles.includes(i.customId)) {
       await i.deferUpdate()
-      if (pronouns[i.id]) {
-        await interaction.member.roles.remove(roleIds[i.id])
-        pronouns[i.id] = false
+      if (pronouns[i.customId]) {
+        await interaction.member.roles.remove(roleIds[i.customId])
+        pronouns[i.customId] = false
       } else {
-        await interaction.member.roles.add(roleIds[i.id])
-        pronouns[i.id] = true
+        await interaction.member.roles.add(roleIds[i.customId])
+        pronouns[i.customId] = true
       }
     }
     await interaction.editReply({

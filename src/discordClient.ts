@@ -1,12 +1,12 @@
-import { Client, GatewayIntentBits, GuildMember } from 'discord.js'
+import { Client, GuildMember, IntentsBitField } from 'discord.js'
 import { config } from 'dotenv'
 import registerCommands from './commandRegistry'
 
 export async function initDiscord (): Promise<Client<true>> {
   return await new Promise((resolve, reject) => {
-    config({ path: '/etc/crobot/.env' })
+    config({ path: process.env.NODE_ENV === 'development' ? './.env' : '/etc/crobot/.env' })
 
-    const client = new Client({ intents: [GatewayIntentBits.Guilds] })
+    const client = new Client({ intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMembers] })
     client.maintainers = new Set<GuildMember>()
 
     void registerCommands(client)
