@@ -88,7 +88,7 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
         pronouns[i.id] = true
       }
     }
-    await i.editReply({
+    await interaction.editReply({
       content: 'Let\'s get started with some pronouns. How should other people refer to you?',
       components: [new ActionRowBuilder<ButtonBuilder>()
         .addComponents(pronounButtons())]
