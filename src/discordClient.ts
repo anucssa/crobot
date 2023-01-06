@@ -12,13 +12,6 @@ export async function initDiscord (): Promise<Client<true>> {
     void registerCommands(client)
 
     client.on('ready', () => {
-      client.user?.setPresence({
-        activities: [{
-          name: 'the door sensor boot',
-          type: 3
-        }],
-        status: 'idle'
-      })
       console.log(`Logged into discord as ${client.user?.tag ?? 'USER IS NULL'}!`)
 
       const maintainerIds = process.env.MAINTAINERS?.split(',') ?? []
