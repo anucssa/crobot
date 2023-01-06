@@ -5,8 +5,8 @@ cache:
     - node_modules/
 
 stages:
-  install
-  build
+  - install
+  - build
 
 install:
   stage: install
