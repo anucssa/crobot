@@ -34,11 +34,11 @@ export class DayNightIcon {
     } else if (now < times.sunriseEnd.getTime()) {
       const sunriseDuration = times.sunriseEnd.getTime() - times.dawn.getTime()
       const sunriseElapsed = now - times.dawn.getTime()
-      return sunriseDuration / sunriseElapsed
+      return sunriseElapsed / sunriseDuration
     } else {
       const sunsetDuration = times.dusk.getTime() - times.sunsetStart.getTime()
       const sunsetElapsed = now - times.sunsetStart.getTime()
-      return 1 - (sunsetDuration / sunsetElapsed)
+      return 1 - (sunsetElapsed / sunsetDuration)
     }
   }
 
