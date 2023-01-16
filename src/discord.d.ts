@@ -1,7 +1,7 @@
 import {
   ChatInputCommandInteraction,
-  Collection,
-  GuildMember,
+  Collection, ContextMenuCommandBuilder,
+  GuildMember, MessageContextMenuCommandInteraction,
   SlashCommandBuilder
 } from 'discord.js'
 
@@ -13,8 +13,15 @@ declare module 'discord.js' {
 }
 
 declare global {
-  interface CommandDefinition {
+  type CommandDefiniton = SlashCommandDefinition | ContextMenuCommandDefinition
+
+  interface SlashCommandDefinition {
     data: SlashCommandBuilder
     execute: (interaction: ChatInputCommandInteraction) => Promise<void>
+  }
+
+  interface ContextMenuCommandDefinition {
+    data: ContextMenuCommandBuilder
+    execute: (interaction: MessageContextMenuCommandInteraction) => Promise<void>
   }
 }

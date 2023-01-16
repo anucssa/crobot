@@ -7,14 +7,14 @@ import { config } from 'dotenv'
 async function main (): Promise<void> {
   config({ path: process.env.NODE_ENV === 'development' ? './.env' : '/etc/crobot/.env' })
 
-  const commands = []
+  const commands: Array<ReturnType<CommandDefiniton['data']['toJSON']>> = []
   // Grab all the command files from the commands directory you created earlier
   let commandFiles = await fs.readdir(process.env.NODE_ENV === 'development' ? './dist/commands/' : '/usr/local/libexec/crobot/dist/commands/')
   commandFiles = commandFiles.filter(file => file.endsWith('.js'))
 
   // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
   for (const file of commandFiles) {
-    const command = await import(`./commands/${file}`)
+    const command: CommandDefiniton = await import(`./commands/${file}`)
     commands.push(command.data.toJSON())
   }
 

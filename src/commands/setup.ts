@@ -9,6 +9,7 @@ import {
 export const data = new SlashCommandBuilder()
   .setName('setup')
   .setDescription('Helps you set up your roles.')
+  .setDMPermission(false)
 
 export async function execute (interaction: ChatInputCommandInteraction<'cached'>): Promise<void> {
   if (interaction.member === null) {
