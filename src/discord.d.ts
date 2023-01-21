@@ -4,11 +4,13 @@ import {
   GuildMember, MessageContextMenuCommandInteraction,
   SlashCommandBuilder
 } from 'discord.js'
+import MembershipStore from './memberships/membershipStore'
 
 declare module 'discord.js' {
   interface Client {
     commands: Collection<string, CommandDefinition>
     maintainers: Set<GuildMember>
+    membershipStore: MembershipStore
   }
 }
 

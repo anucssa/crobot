@@ -3,6 +3,9 @@ import storage, { LocalStorage } from 'node-persist'
 import { SocietyMemberData } from './qpay'
 import twilio, { Twilio } from 'twilio'
 import { config } from 'dotenv'
+import { PhoneNumberInstance } from 'twilio/lib/rest/lookups/v2/phoneNumber'
+import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification'
+import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck'
 
 export default class MembershipStore {
   private readonly qpayClient: QpayClient
@@ -16,6 +19,7 @@ export default class MembershipStore {
     config({ path: process.env.NODE_ENV === 'development' ? './.env' : '/etc/crobot/.env' })
     if (process.env.TWILIO_SID === undefined) throw new Error('TWILIO_SID not set')
     if (process.env.TWILIO_TOKEN === undefined) throw new Error('TWILIO_TOKEN not set')
+    if (process.env.TWILIO_VERIFY_SID === undefined) throw new Error('TWILIO_VERIFY_SID not set')
     this.qpayClient = new QpayClient()
     this.twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN)
   }
@@ -47,5 +51,24 @@ export default class MembershipStore {
       return this.members.find(m => m.phonenumber === phone)
     }
     return member
+  }
+
+  async requestPhoneVerificationCode (phoneNumber: string): Promise<VerificationInstance> {
+    return await this.twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID ?? '').verifications.create({
+      to: phoneNumber,
+      channel: 'sms',
+      locale: 'en'
+    })
+  }
+
+  async verifyPhoneVerificationCode (phoneNumber: string, code: string): Promise<VerificationCheckInstance> {
+    return await this.twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID ?? '').verificationChecks.create({
+      to: phoneNumber,
+      code
+    })
+  }
+
+  async checkPhoneNumber (phoneNumber: string, countryCode: number): Promise<PhoneNumberInstance> {
+    return await this.twilioClient.lookups.v2.phoneNumbers(`+${countryCode}${phoneNumber}`).fetch()
   }
 }
