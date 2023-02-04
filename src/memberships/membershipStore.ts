@@ -4,6 +4,7 @@ import { SocietyMemberData } from './qpay'
 import { config } from 'dotenv'
 import { Snowflake } from 'discord.js'
 import PhoneVerificationManager from './phoneVerification'
+import EmailVerificationManager from './emailVerification'
 
 export default class MembershipStore {
   private readonly qpayClient: QpayClient
@@ -12,11 +13,13 @@ export default class MembershipStore {
 
   private readonly verificationStore: LocalStorage = storage.create({ dir: './data/verificationStore' })
   public readonly phoneVerificationManager: PhoneVerificationManager
+  public readonly emailVerificationManager: EmailVerificationManager
 
   constructor () {
     config({ path: '.env' })
     this.qpayClient = new QpayClient()
     this.phoneVerificationManager = new PhoneVerificationManager(this)
+    this.emailVerificationManager = new EmailVerificationManager(this)
   }
 
   async init (): Promise<void> {
@@ -56,5 +59,15 @@ export default class MembershipStore {
 
   public async checkPhoneVerificationCache (discordId: Snowflake): Promise<string | undefined> {
     return (await this.verificationStore.getItem(discordId))?.phone
+  }
+
+  public async saveEmailVerificationResult (email: string, discordId: Snowflake): Promise<void> {
+    const existing = await this.verificationStore.getItem(discordId) ?? {}
+    existing.email = email
+    await this.verificationStore.setItem(discordId, existing)
+  }
+
+  public async checkEmailVerificationCache (discordId: Snowflake): Promise<string | undefined> {
+    return (await this.verificationStore.getItem(discordId))?.email
   }
 }
