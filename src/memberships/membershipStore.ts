@@ -10,11 +10,11 @@ export default class MembershipStore {
   private members: SocietyMemberData[] = []
   private membersLastUpdated: Date | undefined
 
-  private readonly verificationStore: LocalStorage = storage.create({ dir: process.env.NODE_ENV === 'development' ? './data/verificationStore' : '/usr/local/libexec/crobot/data/verificationStore' })
+  private readonly verificationStore: LocalStorage = storage.create({ dir: './data/verificationStore' })
   public readonly phoneVerificationManager: PhoneVerificationManager
 
   constructor () {
-    config({ path: process.env.NODE_ENV === 'development' ? './.env' : '/etc/crobot/.env' })
+    config({ path: '.env' })
     this.qpayClient = new QpayClient()
     this.phoneVerificationManager = new PhoneVerificationManager(this)
   }

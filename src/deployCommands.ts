@@ -5,7 +5,7 @@ import fs from 'fs/promises'
 import { config } from 'dotenv'
 
 async function main (): Promise<void> {
-  config({ path: process.env.NODE_ENV === 'development' ? './.env' : '/etc/crobot/.env' })
+  config({ path: '.env' })
 
   const commands: Array<ReturnType<CommandDefiniton['data']['toJSON']>> = []
   // Grab all the command files from the commands directory you created earlier
