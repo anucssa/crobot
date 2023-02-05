@@ -46,7 +46,8 @@ export default class MembershipStore {
     const member = this.members.find(m => m.phonenumber === phone)
     if (member === undefined) {
       await this.refreshMembers()
-      return this.members.find(m => m.phonenumber === phone)
+      // Hacky way of adding a +61 onto australian number as the leading zero is truncated 
+      return this.members.find(m => m.phonenumber === phone || "+61" + m.phonenumber.substring(1) === phone )
     }
     return member
   }

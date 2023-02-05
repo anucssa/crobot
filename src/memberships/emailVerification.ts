@@ -68,7 +68,7 @@ export default class EmailVerificationManager {
           throw new Error('No email found, this shouldn\'t happen')
         }
         const existingMembership = await this.membershipStore.getMemberEmail(memberEmail)
-        if (existingMembership !== undefined) {
+        if (existingMembership === undefined) {
           await interactionHandler.showReply(`Hmm... We couldn't find your email registered to an account on QPay. Check you have an active ${new Date().getFullYear()} membership or sign up at https://anucssa.getqpay.com/ . If you think this is a mistake, please ping <@&476384584041365505>.`)
           throw new Error('No membership found')
         }
