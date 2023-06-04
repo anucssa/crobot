@@ -59,11 +59,11 @@ export class PrideIcon extends IconMode {
       if (downloadUrl === null || downloadUrl === undefined) {
         throw new Error('Could not get icon download url')
       }
-      const image = await axios.get(downloadUrl)
+      const image = await axios.get(downloadUrl, { responseType: 'arraybuffer' })
       if (image.status !== 200) {
         throw new Error('Could not get icon')
       }
-      newIcon = Buffer.from(image.data, 'utf8')
+      newIcon = Buffer.from(image.data, 'binary')
       this.recentIcons.unshift(selectedIcon.name)
       if (this.recentIcons.length > 10) {
         this.recentIcons.pop()
