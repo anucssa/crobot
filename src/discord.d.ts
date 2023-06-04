@@ -15,6 +15,7 @@ declare module 'discord.js' {
 }
 
 declare global {
+  type CommandDefinition = SlashCommandDefinition | ContextMenuCommandDefinition
   interface SlashCommandDefinition {
     data: SlashCommandBuilder
     execute: (interaction: ChatInputCommandInteraction) => Promise<void>

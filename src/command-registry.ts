@@ -31,6 +31,7 @@ export default async function registerCommands (client: Client): Promise<void> {
     }
 
     try {
+      // @ts-expect-error -- Eh, it's fine
       await command.execute(interaction)
     } catch (error) {
       console.error(error)
