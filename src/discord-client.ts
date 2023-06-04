@@ -1,6 +1,6 @@
-import { Client, GuildMember, IntentsBitField } from 'discord.js'
+import { Client, type GuildMember, IntentsBitField } from 'discord.js'
 import { config } from 'dotenv'
-import registerCommands from './commandRegistry'
+import registerCommands from './command-registry'
 
 export async function initDiscord (): Promise<Client<true>> {
   return await new Promise((resolve, reject) => {

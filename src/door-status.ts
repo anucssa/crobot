@@ -1,12 +1,12 @@
-import express, { Express } from 'express'
-import { Client, VoiceBasedChannel, VoiceChannel } from 'discord.js'
+import express, { type Express } from 'express'
+import { type Client, type VoiceBasedChannel, type VoiceChannel } from 'discord.js'
 
 const TEN_MINUTES = 1000 * 60 * 10
 
 export class DoorServer {
   private readonly app: Express
-  private readonly port: number = 8080
-  private timer: NodeJS.Timeout | null = null
+  private readonly port: number = 9000
+  private timer?: NodeJS.Timeout = undefined
   private readonly discordClient: Client<true>
   private statusChannel: VoiceBasedChannel | undefined
 
@@ -36,25 +36,25 @@ export class DoorServer {
 
     this.app.use(express.urlencoded({ extended: true }))
 
-    this.app.post('/commonRoom/status', (req, res) => this.updateCommonRoomStatus(req, res))
+    this.app.post('/commonRoom/status', (request, response) => { this.updateCommonRoomStatus(request, response) })
 
     // Make all other http requests go to qpay
-    this.app.get('*', function (req, res) {
-      res.redirect('https://webapp.getqpay.com/')
+    this.app.get('*', function (request, response) {
+      response.redirect('https://webapp.getqpay.com/')
     })
 
     this.app.listen(this.port, () => {
       console.log(`CROBot listening on ${this.port}`)
     })
 
-    this.timer = setTimeout(() => this.timeout(), TEN_MINUTES)
+    this.timer = setTimeout(() => { this.timeout() }, TEN_MINUTES)
   }
 
-  private updateCommonRoomStatus (req: Parameters<Parameters<typeof this.app.post>[1]>[0], res: Parameters<Parameters<typeof this.app.post>[1]>[1]): void {
-    if (this.discordClient === undefined) throw Error('Discord Client not set')
-    console.debug(JSON.stringify(req.body))
-    if (req.body.code === process.env.STATUS_PWD) {
-      if (req.body.state === '1') {
+  private updateCommonRoomStatus (request: Parameters<Parameters<typeof this.app.post>[1]>[0], response: Parameters<Parameters<typeof this.app.post>[1]>[1]): void {
+    if (this.discordClient === undefined) throw new Error('Discord Client not set')
+    console.debug(JSON.stringify(request.body))
+    if (request.body.code === process.env.STATUS_PWD) {
+      if (request.body.state === '1') {
         this.discordClient.user.setPresence({
           activities: [{
             name: 'room is Open ✨',
@@ -76,15 +76,15 @@ export class DoorServer {
 
       // Reset timer
       if (this.timer !== null) clearTimeout(this.timer)
-      this.timer = setTimeout(() => this.timeout(), TEN_MINUTES)
-      res.end(req.body.status)
+      this.timer = setTimeout(() => { this.timeout() }, TEN_MINUTES)
+      response.end(request.body.status)
     } else {
-      res.end('Invalid code')
+      response.end('Invalid code')
     }
   }
 
   private timeout (): void {
-    if (this.discordClient === undefined) throw Error('Discord Client not set')
+    if (this.discordClient === undefined) throw new Error('Discord Client not set')
     this.discordClient.user.setPresence({
       activities: [{
         name: 'sensor dead poke #general',
@@ -93,6 +93,6 @@ export class DoorServer {
       status: 'idle'
     })
     void this.statusChannel?.setName('CR is missing :|')
-    this.timer = null
+    this.timer = undefined
   }
 }

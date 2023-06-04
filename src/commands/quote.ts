@@ -1,7 +1,7 @@
 import {
   ApplicationCommandType,
   ContextMenuCommandBuilder, EmbedBuilder,
-  MessageContextMenuCommandInteraction,
+  type MessageContextMenuCommandInteraction,
   PermissionsBitField
 } from 'discord.js'
 
@@ -31,6 +31,7 @@ export async function execute (interaction: MessageContextMenuCommandInteraction
       .setDescription(quoteTarget?.content)
       .setURL(quoteTarget?.url)
       .setTimestamp(quoteTarget?.createdAt)
+    // eslint-disable-next-line unicorn/no-null
       .setColor(quoteTarget?.member?.displayHexColor ?? null)
       .setAuthor({
         name: quoteTarget?.member?.displayName ?? quoteTarget?.author.username,

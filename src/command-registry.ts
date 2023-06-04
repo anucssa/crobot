@@ -1,6 +1,6 @@
-import { Client, Collection, Events } from 'discord.js'
-import * as fs from 'fs/promises'
-import path from 'path'
+import { type Client, Collection, Events } from 'discord.js'
+import * as fs from 'node:fs/promises'
+import path from 'node:path'
 
 export default async function registerCommands (client: Client): Promise<void> {
   client.commands = new Collection()
@@ -25,7 +25,7 @@ export default async function registerCommands (client: Client): Promise<void> {
 
     const command = interaction.client.commands.get(interaction.commandName)
 
-    if (command == null) {
+    if (command === undefined || command === null) {
       console.error(`No command matching ${interaction.commandName} was found.`)
       return
     }
@@ -42,7 +42,7 @@ export default async function registerCommands (client: Client): Promise<void> {
       if (maintainers.length === 1) {
         maintainersText += `Please ping ${maintainers[0]}.`
       } else if (maintainers.length > 1) {
-        maintainers[maintainers.length - 1] = 'or ' + maintainers[maintainers.length - 1]
+        maintainers[maintainers.length - 1] = 'or ' + (maintainers.at(-1) ?? '')
         maintainersText = 'Please ping ' + maintainers.join(', ')
       }
       await interaction.reply({ content: `There was an error while executing this command! ${maintainersText}`, ephemeral: true })
