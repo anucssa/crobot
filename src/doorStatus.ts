@@ -5,7 +5,7 @@ const TEN_MINUTES = 1000 * 60 * 10
 
 export class DoorServer {
   private readonly app: Express
-  private readonly port: number = 9000
+  private readonly port: number = 8080
   private timer: NodeJS.Timeout | null = null
   private readonly discordClient: Client<true>
   private statusChannel: VoiceBasedChannel | undefined
