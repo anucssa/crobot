@@ -1,8 +1,8 @@
 import {
-  ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle,
-  ChatInputCommandInteraction, GuildMember,
-  ModalBuilder, ModalSubmitFields,
-  ModalSubmitInteraction, User
+  ActionRowBuilder, ButtonBuilder, type ButtonInteraction, ButtonStyle,
+  type ChatInputCommandInteraction, type GuildMember,
+  type ModalBuilder, type ModalSubmitFields,
+  type ModalSubmitInteraction, type User
 } from 'discord.js'
 
 export interface ActionDefinition {
@@ -60,12 +60,7 @@ export default class InteractionHandler {
             .setLabel(action.label)
         }))
 
-    let message
-    if (this.interaction.replied) {
-      message = await this.interaction.editReply({ content, components: [actionRow] })
-    } else {
-      message = await this.interaction.reply({ content, components: [actionRow], ephemeral: true })
-    }
+    const message = await (this.interaction.replied ? this.interaction.editReply({ content, components: [actionRow] }) : this.interaction.reply({ content, components: [actionRow], ephemeral: true }))
     const buttonInteraction = await message.awaitMessageComponent({
       time,
       filter: (filterInteraction) => filterInteraction.user.id === this.interaction.user.id && actionCallBacks.has(filterInteraction.customId) && !filterInteraction.replied
@@ -78,17 +73,13 @@ export default class InteractionHandler {
     try {
       await actionCallBacks.get(buttonInteraction.customId)?.()
       await originalInteraction.deleteReply()
-    } catch (e) {
+    } catch (error) {
       await originalInteraction.deleteReply()
-      throw e
+      throw error
     }
   }
 
   public async showReply (content: string): Promise<void> {
-    if (this.interaction.replied) {
-      await this.interaction.editReply({ content })
-    } else {
-      await this.interaction.reply({ content, ephemeral: true })
-    }
+    await (this.interaction.replied ? this.interaction.editReply({ content }) : this.interaction.reply({ content, ephemeral: true }))
   }
 }

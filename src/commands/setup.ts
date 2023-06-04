@@ -1,7 +1,7 @@
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   SlashCommandBuilder,
   ButtonStyle
 } from 'discord.js'
@@ -42,11 +42,11 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
 
   // Get current pronouns
   if (isCached) {
-    interaction.member.roles.cache.forEach((role) => {
+    for (const role of interaction.member.roles.cache) {
       if (pronounRoles.includes(role.name)) {
         pronouns[role.name] = true
       }
-    })
+    }
   }
 
   const pronounButtons = (): ButtonBuilder[] => [new ButtonBuilder()
@@ -67,8 +67,8 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
     .setStyle(pronouns['ask me about my pronouns!'] ? ButtonStyle.Success : ButtonStyle.Danger)]
 
   const collector = interaction.channel.createMessageComponentCollector({
-    filter: (i) => i.user.id === interaction.user.id,
-    time: 15000
+    filter: (index) => index.user.id === interaction.user.id,
+    time: 15_000
   })
 
   await interaction.reply({
@@ -78,15 +78,15 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
     ephemeral: true
   })
 
-  collector.on('collect', async (i) => {
-    if (pronounRoles.includes(i.customId)) {
-      await i.deferUpdate()
-      if (pronouns[i.customId]) {
-        await interaction.member.roles.remove(roleIds[i.customId])
-        pronouns[i.customId] = false
+  collector.on('collect', async (index) => {
+    if (pronounRoles.includes(index.customId)) {
+      await index.deferUpdate()
+      if (pronouns[index.customId]) {
+        await interaction.member.roles.remove(roleIds[index.customId])
+        pronouns[index.customId] = false
       } else {
-        await interaction.member.roles.add(roleIds[i.customId])
-        pronouns[i.customId] = true
+        await interaction.member.roles.add(roleIds[index.customId])
+        pronouns[index.customId] = true
       }
     }
     await interaction.editReply({

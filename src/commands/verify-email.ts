@@ -1,11 +1,11 @@
 import {
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   SlashCommandBuilder
 } from 'discord.js'
 
 export const data = new SlashCommandBuilder()
-  .setName('verifyphone')
-  .setDescription('Link your discord account to a QPay Membership via phone number.')
+  .setName('verifyemail')
+  .setDescription('Link your discord account to a QPay Membership via email.')
   .setDMPermission(false)
 
 export async function execute (interaction: ChatInputCommandInteraction<'cached'>): Promise<void> {
@@ -19,5 +19,5 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
     throw new Error('Raw guild')
   }
 
-  await interaction.client.membershipStore.phoneVerificationManager.handleVerificationInteraction(interaction)
+  await interaction.client.membershipStore.emailVerificationManager.handleVerificationInteraction(interaction)
 }

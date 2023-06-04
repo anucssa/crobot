@@ -1,19 +1,18 @@
-import MembershipStore from './membershipStore'
-import twilio, { Twilio } from 'twilio'
-import { VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification'
-import { VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck'
-import { PhoneNumberInstance } from 'twilio/lib/rest/lookups/v2/phoneNumber'
+import type MembershipStore from './membership-store'
+import twilio, { type Twilio } from 'twilio'
+import { type VerificationInstance } from 'twilio/lib/rest/verify/v2/service/verification'
+import { type VerificationCheckInstance } from 'twilio/lib/rest/verify/v2/service/verificationCheck'
 import {
   ActionRowBuilder,
   ButtonStyle,
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle
 } from 'discord.js'
-import InteractionHandler from '../InteractionHandler'
+import InteractionHandler from '../interaction-handler'
 
-export default class PhoneVerificationManager {
+export default class EmailVerificationManager {
   private readonly membershipStore: MembershipStore
   private readonly twilioClient: Twilio
   constructor (membershipStore: MembershipStore) {
@@ -24,23 +23,23 @@ export default class PhoneVerificationManager {
     this.twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN)
   }
 
-  public async requestPhoneVerificationCode (phoneNumber: string): Promise<VerificationInstance> {
+  public async requestEmailVerificationCode (email: string): Promise<VerificationInstance> {
     return await this.twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID ?? '').verifications.create({
-      to: phoneNumber,
-      channel: 'sms',
+      to: email,
+      channel: 'email',
       locale: 'en'
     })
   }
 
-  public async verifyPhoneVerificationCode (phoneNumber: string, code: string): Promise<VerificationCheckInstance> {
+  public async verifyEmailVerificationCode (email: string, code: string): Promise<VerificationCheckInstance> {
     return await this.twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID ?? '').verificationChecks.create({
-      to: phoneNumber,
+      to: email,
       code
     })
   }
 
-  public async checkPhoneNumber (phoneNumber: string, countryCode: number): Promise<PhoneNumberInstance> {
-    return await this.twilioClient.lookups.v2.phoneNumbers(`+${countryCode}${phoneNumber}`).fetch()
+  public checkEmail (email: string): boolean {
+    return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)
   }
 
   /**
@@ -57,20 +56,20 @@ export default class PhoneVerificationManager {
         return true
       }
 
-      const verifyNewNumber = async (): Promise<void> => {
-        const phoneNumber = await this.handleGetPhoneNumberInteraction(interactionHandler)
-        const verification = await this.requestPhoneVerificationCode(phoneNumber)
+      const verifyNewEmail = async (): Promise<void> => {
+        const email = await this.handleGetEmailInteraction(interactionHandler)
+        const verification = await this.requestEmailVerificationCode(email)
         await this.handleGetVerificationCodeInteraction(interactionHandler, verification)
       }
 
       const checkMembership = async (): Promise<void> => {
-        const memberPhone = await this.membershipStore.checkPhoneVerificationCache(interactionHandler.user.id)
-        if (memberPhone === undefined) {
-          throw new Error('No phone number found, this shouldn\'t happen')
+        const memberEmail = await this.membershipStore.checkEmailVerificationCache(interactionHandler.user.id)
+        if (memberEmail === undefined) {
+          throw new Error('No email found, this shouldn\'t happen')
         }
-        const existingMembership = await this.membershipStore.getMemberPhone(memberPhone)
+        const existingMembership = await this.membershipStore.getMemberEmail(memberEmail)
         if (existingMembership === undefined) {
-          await interactionHandler.showReply(`Hmm... We couldn't find your phone number registered to an account on QPay. Check you have an active ${new Date().getFullYear()} membership or sign up at https://anucssa.getqpay.com/ . If you think this is a mistake, please ping <@&476384584041365505>.`)
+          await interactionHandler.showReply(`Hmm... We couldn't find your email registered to an account on QPay. Check you have an active ${new Date().getFullYear()} membership or sign up at https://anucssa.getqpay.com/ . If you think this is a mistake, please ping <@&476384584041365505>.`)
           throw new Error('No membership found')
         }
         await interactionHandler.member.roles.add('753524901708693558')
@@ -79,34 +78,34 @@ You should have the <@&753524901708693558> role now.
 If you have any questions, please ping <@&476384584041365505>.`)
       }
 
-      const previousVerification = await this.membershipStore.checkPhoneVerificationCache(interactionHandler.user.id)
-      if (previousVerification !== undefined) {
+      const previousVerification = await this.membershipStore.checkEmailVerificationCache(interactionHandler.user.id)
+      if (previousVerification === undefined) {
+        await verifyNewEmail()
+        await checkMembership()
+      } else {
         await interactionHandler.showReplyWithActionRow(
             `You have previously verified ownership of ${previousVerification}. Would you like to use it?`,
             [
               {
-                label: 'Use Saved Number',
+                label: 'Use Saved Email',
                 style: ButtonStyle.Primary,
                 callback: async () => {
                   await checkMembership()
                 }
               },
               {
-                label: 'Verify New Number',
+                label: 'Verify New Email',
                 style: ButtonStyle.Secondary,
                 callback: async () => {
-                  await verifyNewNumber()
+                  await verifyNewEmail()
                   await checkMembership()
                 }
               }
             ])
-      } else {
-        await verifyNewNumber()
-        await checkMembership()
       }
       return true
-    } catch (e) {
-      console.warn(e)
+    } catch (error) {
+      console.warn(error)
       return false
     }
   }
@@ -118,51 +117,31 @@ If you have any questions, please ping <@&476384584041365505>.`)
    * @return {Promise<string>} - The phone number
    * @throws {Error} - If the user doesn't enter a valid phone number, replies with an error message in discord
    */
-  private async handleGetPhoneNumberInteraction (interactionHandler: InteractionHandler): Promise<string> {
+  private async handleGetEmailInteraction (interactionHandler: InteractionHandler): Promise<string> {
     const modal = new ModalBuilder()
-      .setCustomId('getphonenumber')
-      .setTitle('Verify QPay Phone Number')
+      .setCustomId('getemail')
+      .setTitle('Verify QPay Email')
 
-    const countryCodeInput = new TextInputBuilder()
-      .setCustomId('countrycode')
-      .setPlaceholder('e.g. +61')
+    const emailForm = new TextInputBuilder()
+      .setCustomId('email')
+      .setPlaceholder('e.g. uXXXXXXX@anu.edu.au')
       .setRequired(true)
-      .setLabel('Country Code')
+      .setLabel('Email')
       .setStyle(TextInputStyle.Short)
 
-    const phoneNumberInput = new TextInputBuilder()
-      .setCustomId('phonenumber')
-      .setPlaceholder('e.g. 412345678')
-      .setRequired(true)
-      .setLabel('Phone Number')
-      .setStyle(TextInputStyle.Short)
+    const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(emailForm)
 
-    const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(countryCodeInput)
-    const actionRow2 = new ActionRowBuilder<TextInputBuilder>().addComponents(phoneNumberInput)
-
-    modal.addComponents(actionRow, actionRow2)
+    modal.addComponents(actionRow)
 
     const modalFields = await interactionHandler.showModal(modal)
 
-    let countryCode = modalFields.getTextInputValue('countrycode')
-    const phoneNumber = modalFields.getTextInputValue('phonenumber')
-    if (countryCode.startsWith('+')) countryCode = countryCode.substring(1)
-    let validatedPhoneNumber
-    try {
-      validatedPhoneNumber = await this.checkPhoneNumber(phoneNumber, parseInt(countryCode))
-    } catch (e) {
-      console.log(e)
-      await interactionHandler.showReply('An error occurred while validating your phone number. Please try again and make sure you enter your number and country code as shown in the examples.')
-      throw new Error('Invalid phone number')
-    }
-    if (!validatedPhoneNumber.valid) {
-      await interactionHandler.showReply(`Hmm... looks like there's an issue with your phone number 😐
-We had a look and found the following issues:
-${validatedPhoneNumber.validationErrors.map((error) => `- ${error}`).join('\n')}`)
-      throw new Error('Invalid phone number')
+    const email = modalFields.getTextInputValue('email')
+    if (!this.checkEmail(email)) {
+      await interactionHandler.showReply('Hmm... looks like your email failed to pass our regex 😐')
+      throw new Error('Invalid email')
     }
     await interactionHandler.showReply('Thanks! We\'ll send you a verification code shortly.')
-    return validatedPhoneNumber.phoneNumber
+    return email
   }
 
   /**
@@ -201,13 +180,13 @@ ${validatedPhoneNumber.validationErrors.map((error) => `- ${error}`).join('\n')}
                 await interactionHandler.showReply('Hmm... that doesn\'t look like a valid code 🤔')
                 throw new Error('Invalid code')
               }
-              const verificationCheckInstance = await this.verifyPhoneVerificationCode(verification.to, code)
+              const verificationCheckInstance = await this.verifyEmailVerificationCode(verification.to, code)
               if (!verificationCheckInstance.valid) {
                 await interactionHandler.showReply('Hmm... looks like there\'s an issue with your verification code 😭')
                 throw new Error('Invalid code')
               }
-              await this.membershipStore.savePhoneVerificationResult(verification.to, interactionHandler.user.id)
-              await interactionHandler.showReply('Thanks! Your phone number has been verified.')
+              await this.membershipStore.saveEmailVerificationResult(verification.to, interactionHandler.user.id)
+              await interactionHandler.showReply('Thanks! Your email has been verified.')
             }
           }
         ],

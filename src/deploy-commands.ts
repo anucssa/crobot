@@ -1,7 +1,7 @@
 // Run this file after updating commands to deploy them to the CSSA server
 // I absolutely just yeeted this from the discord.js guide
 import { REST, Routes } from 'discord.js'
-import fs from 'fs/promises'
+import fs from 'node:fs/promises'
 import { config } from 'dotenv'
 
 async function main (): Promise<void> {
@@ -39,4 +39,4 @@ async function main (): Promise<void> {
   }
 }
 
-main().catch(console.error)
+await main()

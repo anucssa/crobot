@@ -1,7 +1,7 @@
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  ChatInputCommandInteraction,
+  type ChatInputCommandInteraction,
   SlashCommandBuilder,
   ButtonStyle, PermissionsBitField
 } from 'discord.js'
@@ -29,8 +29,8 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
   }
 
   const collector = interaction.channel.createMessageComponentCollector({
-    filter: (i) => i.user.id === interaction.user.id,
-    time: 15000
+    filter: (index) => index.user.id === interaction.user.id,
+    time: 15_000
   })
 
   await interaction.reply({
@@ -44,9 +44,9 @@ export async function execute (interaction: ChatInputCommandInteraction<'cached'
     ephemeral: true
   })
 
-  collector.on('collect', async (i) => {
-    if (i.customId === 'confirm') {
-      await i.deferUpdate()
+  collector.on('collect', async (index) => {
+    if (index.customId === 'confirm') {
+      await index.deferUpdate()
       const guild = interaction.guild
       let removed = 0
       await guild.members.fetch()

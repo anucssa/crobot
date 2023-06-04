@@ -1,7 +1,7 @@
 import { config } from 'dotenv'
-import axios, { AxiosResponse } from 'axios'
+import axios, { type AxiosResponse } from 'axios'
 import qs from 'qs'
-import { LoginData, MembershipListData, SocietyMemberData } from './qpay'
+import { type LoginData, type MembershipListData, type SocietyMemberData } from './qpay'
 
 const baseURL = 'https://webapp.getqpay.com/makecall.php'
 
@@ -27,7 +27,7 @@ export default class QpayClient {
     if (process.env.QPAY_PHONE === undefined) throw new Error('QPAY_PHONE not set')
     if (process.env.QPAY_PASSWORD === undefined) throw new Error('QPAY_PASSWORD not set')
 
-    const res = await this.makeRequest<LoginData>({
+    const response = await this.makeRequest<LoginData>({
       'details[phonenumber]': process.env.QPAY_PHONE,
       'details[passwordhash]': process.env.QPAY_PASSWORD,
       'details[device]': 'web_portal',
@@ -35,15 +35,15 @@ export default class QpayClient {
       endpoint: 'login'
     })
 
-    this.sessionId = res.data.sessionid
-    console.log('Logged in to QPay as ' + res.data.email)
+    this.sessionId = response.data.sessionid
+    console.log('Logged in to QPay as ' + response.data.email)
   }
 
   public async getMembers (): Promise<SocietyMemberData[]> {
     if (this.sessionId === undefined) throw new Error('Not logged in')
     if (process.env.QPAY_SOCIETY_ID === undefined) throw new Error('QPAY_SOCIETY_ID not set')
 
-    const res = await this.makeRequest<MembershipListData>({
+    const response = await this.makeRequest<MembershipListData>({
       'details[sessionid]': this.sessionId,
       'details[device]': 'web_portal',
       'details[version]': 4,
@@ -51,6 +51,6 @@ export default class QpayClient {
       'details[societyID]': process.env.QPAY_SOCIETY_ID
     })
 
-    return res.data.allMemberships
+    return response.data.allMemberships
   }
 }

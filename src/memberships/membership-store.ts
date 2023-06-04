@@ -1,10 +1,10 @@
-import QpayClient from './qpayClient'
-import storage, { LocalStorage } from 'node-persist'
-import { SocietyMemberData } from './qpay'
+import QpayClient from './qpay-client'
+import storage, { type LocalStorage } from 'node-persist'
+import { type SocietyMemberData } from './qpay'
 import { config } from 'dotenv'
-import { Snowflake } from 'discord.js'
-import PhoneVerificationManager from './phoneVerification'
-import EmailVerificationManager from './emailVerification'
+import { type Snowflake } from 'discord.js'
+import PhoneVerificationManager from './phone-verification'
+import EmailVerificationManager from './email-verification'
 
 export default class MembershipStore {
   private readonly qpayClient: QpayClient
@@ -46,8 +46,8 @@ export default class MembershipStore {
     const member = this.members.find(m => m.phonenumber === phone)
     if (member === undefined) {
       await this.refreshMembers()
-      // Hacky way of adding a +61 onto australian number as the leading zero is truncated 
-      return this.members.find(m => m.phonenumber === phone || "+61" + m.phonenumber.substring(1) === phone )
+      // Hacky way of adding a +61 onto australian number as the leading zero is truncated
+      return this.members.find(m => m.phonenumber === phone || '+61' + m.phonenumber.slice(1) === phone)
     }
     return member
   }
@@ -59,7 +59,8 @@ export default class MembershipStore {
   }
 
   public async checkPhoneVerificationCache (discordId: Snowflake): Promise<string | undefined> {
-    return (await this.verificationStore.getItem(discordId))?.phone
+    const verification = await this.verificationStore.getItem(discordId)
+    return verification?.phone
   }
 
   public async saveEmailVerificationResult (email: string, discordId: Snowflake): Promise<void> {
@@ -69,6 +70,7 @@ export default class MembershipStore {
   }
 
   public async checkEmailVerificationCache (discordId: Snowflake): Promise<string | undefined> {
-    return (await this.verificationStore.getItem(discordId))?.email
+    const verification = await this.verificationStore.getItem(discordId)
+    return verification?.email
   }
 }

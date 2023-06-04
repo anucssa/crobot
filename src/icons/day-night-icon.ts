@@ -1,14 +1,15 @@
-import { Client } from 'discord.js'
-import { getTimes, GetTimesResult } from 'suncalc'
-import dayIcon from './assets/dayIcon'
-import nightIcon from './assets/nightIcon'
+import { type Client } from 'discord.js'
+import { getTimes, type GetTimesResult } from 'suncalc'
+import dayIcon from '../assets/day-icon'
+import nightIcon from '../assets/night-icon'
 import sharp from 'sharp'
+import { IconMode } from './icon-mode'
 
-export class DayNightIcon {
-  private readonly discordClient: Client<true>
+export class DayNightIcon extends IconMode {
   private lastIconValue: number
+  public readonly interval = 1000 * 60 * 3
   constructor (client: Client<true>) {
-    this.discordClient = client
+    super(client)
     this.lastIconValue = -1
   }
 
@@ -21,7 +22,6 @@ export class DayNightIcon {
       this.lastIconValue = day
       console.log(`Updated server icon at ${Math.round(day * 1000) / 10}% day level`)
     }
-    setTimeout(() => { void this.updateIcon() }, 1000 * 60 * 3)
   }
 
   private currentDayAmount (): number {
@@ -45,8 +45,8 @@ export class DayNightIcon {
   private getTimes (date = new Date()): GetTimesResult {
     return getTimes(
       date,
-      -35.275283,
-      149.120506,
+      -35.275_283,
+      149.120_506,
       570.8
     )
   }
