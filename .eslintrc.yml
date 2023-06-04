@@ -11,4 +11,5 @@ parserOptions:
   project: tsconfig.json
 plugins:
   - unicorn
-rules: {}
+rules:
+  unicorn/prefer-top-level-await: off

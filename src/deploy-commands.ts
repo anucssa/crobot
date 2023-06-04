@@ -39,4 +39,4 @@ async function main (): Promise<void> {
   }
 }
 
-await main()
+main().catch(console.error)

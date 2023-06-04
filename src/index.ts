@@ -16,4 +16,4 @@ async function main (): Promise<void> {
   console.log('Finished initialisation')
 }
 
-await main()
+main().catch(console.error)
