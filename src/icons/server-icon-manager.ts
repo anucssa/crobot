@@ -6,10 +6,12 @@ import { type IconMode } from './icon-mode'
 export default class ServerIconManager {
   private readonly dayNightIcon: DayNightIcon
   private readonly prideIcon: PrideIcon
+  private lastIcon: IconMode
 
   constructor (client: Client<true>) {
     this.dayNightIcon = new DayNightIcon(client)
     this.prideIcon = new PrideIcon(client)
+    this.lastIcon = this.currentIcon
   }
 
   private get currentIcon (): IconMode {
@@ -34,18 +36,23 @@ export default class ServerIconManager {
 
   public async * iconTimer (): AsyncGenerator<void, void, void> {
     while (true) {
-      const timeTilNextIcon = this.timeTilNextIcon
-      await delay(timeTilNextIcon)
+      // JS gets a bit weird with big timeouts, so we cap it at 1 hour and just loop
+      while (this.currentIcon === this.lastIcon) {
+        const timeTilNextIcon = this.timeTilNextIcon
+        await delay(Math.min(timeTilNextIcon, 60 * 60 * 1000))
+      }
       yield
     }
   }
 
   public async iconLoop (): Promise<void> {
     this.currentIcon.start()
+    this.lastIcon = this.currentIcon
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for await (const _ of this.iconTimer()) {
       this.notCurrentIcon.stop()
       this.currentIcon.start()
+      this.lastIcon = this.currentIcon
     }
   }
 }
