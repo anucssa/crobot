@@ -9,6 +9,7 @@ export class DoorServer {
   private timer?: NodeJS.Timeout = undefined
   private readonly discordClient: Client<true>
   private statusChannel: VoiceBasedChannel | undefined
+  private status: boolean = false
 
   constructor (discordClient: Client) {
     this.discordClient = discordClient
@@ -36,6 +37,11 @@ export class DoorServer {
 
     this.app.use(express.urlencoded({ extended: true }))
 
+    this.app.get('/commonRoom/status', (request, response) => {
+	response.set('Content-Type', 'application/json')
+	response.send(JSON.stringify({"status": this.status}))
+    })
+
     this.app.post('/commonRoom/status', (request, response) => { this.updateCommonRoomStatus(request, response) })
 
     // Make all other http requests go to qpay
@@ -62,6 +68,7 @@ export class DoorServer {
           }],
           status: 'online'
         })
+	this.status = true
         void this.statusChannel?.setName('CR is open!')
       } else {
         this.discordClient.user.setPresence({
@@ -71,6 +78,7 @@ export class DoorServer {
           }],
           status: 'dnd'
         })
+        this.status = false
         void this.statusChannel?.setName('CR is closed')
       }
 
