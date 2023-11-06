@@ -17,6 +17,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y sshpass git
 
+    # Install openconnect
+    - name: Install openconnect
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openconnect
+
     # Connect to GlobalProtect using openconnect
     - name: Connect to GlobalProtect
       run: |
