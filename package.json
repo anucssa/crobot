@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "The new CRObot, now in TypeScript ✨",
   "main": "index.js",
+  "license": "GPL-3.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prebuild": "rimraf dist",
