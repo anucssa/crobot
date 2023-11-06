@@ -11,37 +11,40 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    # Install openconnect
-    - name: Install openconnect
+    # Install openconnect and sshpass
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y openconnect
+        sudo apt-get install -y openconnect sshpass
 
     # Connect to GlobalProtect using openconnect
     - name: Connect to GlobalProtect
       run: |
         echo "${{ secrets.ANU_PASSWORD }}" | sudo openconnect https://student-access.anu.edu.au -u ${{ secrets.ANU_USERNAME }} --passwd-on-stdin --protocol=gp --background
 
-    # SSH and deploy the application
+    # SSH and deploy the application using SSH key
     - name: SSH and deploy application
-      run: |
-        # SSH into the server with the admin user
-        sshpass -p "${{ secrets.ANU_PASSWORD }}" ssh -o StrictHostKeyChecking=no -t ${ANU_USERNAME}@cssa.anu.edu.au '
-          # Run commands using sudo without a password prompt
-          echo "${{ secrets.ANU_PASSWORD }}" | sudo -S su - ${CROBOT_DEPLOY_USER} -c "
-            # Ensure we are in the right directory
-            cd /usr/local/libexec/crobot || exit 1
-
-            # Pull the latest changes
-            git pull origin master
-
-            # Your build commands go here
-            # Example: ./build.sh or make
-          "
-
-          # Restart the crobot service with the original admin user
-          echo "${{ secrets.ANU_PASSWORD }}" | sudo -S systemctl restart crobot
-        '
       env:
-        ANU_USERNAME: ${{ secrets.ANU_USERNAME }}
-        CROBOT_DEPLOY_USER: ${{ secrets.CROBOT_DEPLOY_USER }}
+        DEPLOY_KEY: ${{ secrets.CROBOT_DEPLOY_SSH_KEY }}
+      run: |
+        # Save private key to a file and restrict its permissions
+        echo "$DEPLOY_KEY" > deploy_key
+        chmod 600 deploy_key
+
+        # Use SSH to run commands as the crobot-deploy user
+        ssh -o StrictHostKeyChecking=no -i deploy_key ${CROBOT_DEPLOY_USER}@cssa.anu.edu.au '
+          # Ensure we are in the right directory
+          cd /usr/local/libexec/crobot || exit 1
+
+          # Pull the latest changes
+          git pull origin master
+
+          # Your build commands go here
+          # Example: ./build.sh or make
+        '
+
+        # Restart the crobot service with the original admin user
+        # You might still need to handle this with sudo and a password, if necessary
+        sshpass -p "${{ secrets.ANU_PASSWORD }}" ssh -o StrictHostKeyChecking=no -i deploy_key ${ANU_USERNAME}@cssa.anu.edu.au '
+          sudo systemctl restart crobot
+        '
