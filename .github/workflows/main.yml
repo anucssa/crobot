@@ -12,10 +12,10 @@ jobs:
       uses: actions/checkout@v2
 
     # Install sshpass
-    - name: Install sshpass
+    - name: Install sshpass and openconnect
       run: |
         sudo apt-get update
-        sudo apt-get install -y sshpass
+        sudo apt-get install -y sshpass openconnect
 
     # Connect to GlobalProtect using openconnect
     - name: Connect to GlobalProtect
