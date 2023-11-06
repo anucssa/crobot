@@ -11,39 +11,37 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    # Install openconnect and sshpass
-    - name: Install dependencies
+    # Install sshpass
+    - name: Install sshpass
       run: |
         sudo apt-get update
-        sudo apt-get install -y openconnect sshpass
+        sudo apt-get install -y sshpass
 
     # Connect to GlobalProtect using openconnect
     - name: Connect to GlobalProtect
       run: |
         echo "${{ secrets.ANU_PASSWORD }}" | sudo openconnect https://student-access.anu.edu.au -u ${{ secrets.ANU_USERNAME }} --passwd-on-stdin --protocol=gp --background
 
-    # SSH and deploy the application using SSH key
+    # SSH and deploy the application using password
     - name: SSH and deploy application
-      env:
-        DEPLOY_KEY: ${{ secrets.CROBOT_DEPLOY_SSH_KEY }}
       run: |
-        # Save private key to a file and restrict its permissions
-        echo "$DEPLOY_KEY" > deploy_key
-        chmod 600 deploy_key
-    
-        # Use SSH to run commands as the crobot-deploy user
-        ssh -o StrictHostKeyChecking=no -i deploy_key ${CROBOT_DEPLOY_USER}@cssa.anu.edu.au '
+        # Use sshpass to login as crobot-deploy
+        sshpass -p "${{ secrets.CROBOT_DEPLOY_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${CROBOT_DEPLOY_USER}@cssa.anu.edu.au '
           # Ensure we are in the right directory
           cd /usr/local/libexec/crobot || exit 1
-    
+
           # Pull the latest changes
           git pull origin master
-    
+
           # Your build commands go here
           # Example: ./build.sh or make
         '
-    
-        # Use SSH and sshpass to restart the crobot service with the original admin user
+
+        # Restart the crobot service with the original admin user
+        # If the ANU_USERNAME can use passwordless sudo for the systemctl command, no need for sshpass here
         sshpass -p "${{ secrets.ANU_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${ANU_USERNAME}@cssa.anu.edu.au '
           sudo systemctl restart crobot
         '
+      env:
+        CROBOT_DEPLOY_USER: ${{ secrets.CROBOT_DEPLOY_USER }}
+        CROBOT_DEPLOY_PASSWORD: ${{ secrets.CROBOT_DEPLOY_PASSWORD }}
