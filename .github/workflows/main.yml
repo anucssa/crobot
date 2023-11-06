@@ -39,7 +39,7 @@ jobs:
 
         # Restart the crobot service with the original admin user
         # If the ANU_USERNAME can use passwordless sudo for the systemctl command, no need for sshpass here
-        sshpass -p "${ ANU_PASSWORD }" ssh -o StrictHostKeyChecking=no ${ANU_USERNAME}@cssa.anu.edu.au '
+        sshpass -p "${ ANU_PASSWORD }" ssh -o StrictHostKeyChecking=no ${ANU_USER}@cssa.anu.edu.au '
           sudo systemctl restart crobot
         '
       env:
