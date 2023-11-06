@@ -1,0 +1,49 @@
+name: Deploy Crobot Service
+
+on: [push]  # Adjust this as per your triggering needs.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository if needed
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    # Install dependencies
+    - name: Install SSH Client and Git
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y sshpass git
+
+    # Connect to GlobalProtect using openconnect
+    - name: Connect to GlobalProtect
+      run: |
+        echo "${{ secrets.ANU_PASSWORD }}" | sudo openconnect https://student-access.anu.edu.au -u ${{ secrets.ANU_USERNAME }} --passwd-on-stdin --protocol=gp --background
+
+    # SSH and deploy the application
+    - name: SSH and deploy application
+      run: |
+        # SSH into the server with the admin user
+        sshpass -p "${{ secrets.ANU_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${ANU_USERNAME}@cssa.anu.edu.au '
+          # Use sudo su to switch to the crobot-deploy user
+          sudo su - ${CROBOT_DEPLOY_USER} -c "
+            # Ensure we are in the right directory
+            cd /usr/local/libexec/crobot || exit 1
+
+            # Pull the latest changes
+            git pull origin main
+
+            # Your build commands go here
+            # Example: ./build.sh or make
+
+            # Exit from the crobot-deploy user shell
+          "
+
+          # Restart the crobot service with the original admin user
+          sudo systemctl restart crobot
+        '
+      env:
+        ANU_USERNAME: ${{ secrets.ANU_USERNAME }}
+        CROBOT_DEPLOY_USER: ${{ secrets.CROBOT_DEPLOY_USER }}
