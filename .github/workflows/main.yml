@@ -34,7 +34,8 @@ jobs:
           git pull origin main
 
           # Your build commands go here
-          # Example: ./build.sh or make
+          npm i
+          npm run build
         '
 
         # Restart the crobot service with the original admin user
