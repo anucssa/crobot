@@ -11,12 +11,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    # Install dependencies
-    - name: Install SSH Client and Git
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y sshpass git
-
     # Install openconnect
     - name: Install openconnect
       run: |
@@ -32,23 +26,21 @@ jobs:
     - name: SSH and deploy application
       run: |
         # SSH into the server with the admin user
-        sshpass -p "${{ secrets.ANU_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${ANU_USERNAME}@cssa.anu.edu.au '
-          # Use sudo su to switch to the crobot-deploy user
-          sudo su - ${CROBOT_DEPLOY_USER} -c "
+        sshpass -p "${{ secrets.ANU_PASSWORD }}" ssh -o StrictHostKeyChecking=no -t ${ANU_USERNAME}@cssa.anu.edu.au '
+          # Run commands using sudo without a password prompt
+          echo "${{ secrets.ANU_PASSWORD }}" | sudo -S su - ${CROBOT_DEPLOY_USER} -c "
             # Ensure we are in the right directory
             cd /usr/local/libexec/crobot || exit 1
 
             # Pull the latest changes
-            git pull origin main
+            git pull origin master
 
             # Your build commands go here
             # Example: ./build.sh or make
-
-            # Exit from the crobot-deploy user shell
           "
 
           # Restart the crobot service with the original admin user
-          sudo systemctl restart crobot
+          echo "${{ secrets.ANU_PASSWORD }}" | sudo -S systemctl restart crobot
         '
       env:
         ANU_USERNAME: ${{ secrets.ANU_USERNAME }}
