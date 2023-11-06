@@ -9,10 +9,9 @@ export const data = new ContextMenuCommandBuilder()
   .setName('Quote')
   .setDMPermission(false)
   .setType(ApplicationCommandType.Message)
-  .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages)
 
 export async function execute (interaction: MessageContextMenuCommandInteraction<'cached'>): Promise<void> {
-  const quotesChannel = await interaction.guild.channels.fetch('758557309285826611')
+  const quotesChannel = await interaction.guild.channels.fetch('1169166790094491678')
   if (quotesChannel === null) {
     throw new Error('Quotes channel is null')
   } else if (!quotesChannel.isTextBased()) {

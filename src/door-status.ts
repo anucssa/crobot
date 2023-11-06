@@ -38,8 +38,8 @@ export class DoorServer {
     this.app.use(express.urlencoded({ extended: true }))
 
     this.app.get('/commonRoom/status', (request, response) => {
-	response.set('Content-Type', 'application/json')
-	response.send(JSON.stringify({"status": this.status}))
+      response.set('Content-Type', 'application/json')
+      response.send(JSON.stringify({ status: this.status }))
     })
 
     this.app.post('/commonRoom/status', (request, response) => { this.updateCommonRoomStatus(request, response) })
@@ -68,7 +68,7 @@ export class DoorServer {
           }],
           status: 'online'
         })
-	this.status = true
+        this.status = true
         void this.statusChannel?.setName('CR is open!')
       } else {
         this.discordClient.user.setPresence({
