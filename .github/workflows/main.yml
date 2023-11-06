@@ -46,4 +46,4 @@ jobs:
         CROBOT_DEPLOY_USER: ${{ secrets.CROBOT_DEPLOY_USER }}
         CROBOT_DEPLOY_PASSWORD: ${{ secrets.CROBOT_DEPLOY_PASSWORD }}
         ANU_USER: ${{ secrets.ANU_USERNAME }}
-        ANU_PASSWORD: ${{ secrects.ANU_PASSWORD }}
+        ANU_PASSWORD: ${{ secrets.ANU_PASSWORD }}
