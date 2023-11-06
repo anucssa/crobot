@@ -31,7 +31,7 @@ jobs:
           cd /usr/local/libexec/crobot || exit 1
 
           # Pull the latest changes
-          git pull origin master
+          git pull origin main
 
           # Your build commands go here
           # Example: ./build.sh or make
