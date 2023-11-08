@@ -42,7 +42,7 @@ export default function serverIcon (client: Client<true>): void {
     }
 
     // Get a new icon randomly, weighted recent icons less
-    const newIcon = weightedChoice(repoContents.data, repoContents.data.map(icon => iconWeight(icon.name)))
+    const newIcon = weightedChoice(repoContents.data, repoContents.data.map(icon => Math.max(1, iconWeight(icon.name))))
 
     // Download the icon
     const downloadUrl = newIcon.download_url
