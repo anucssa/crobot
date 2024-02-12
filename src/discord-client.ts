@@ -10,6 +10,9 @@ export async function initDiscord(): Promise<Client<true>> {
       intents: [
         IntentsBitField.Flags.Guilds,
         IntentsBitField.Flags.GuildMembers,
+        IntentsBitField.Flags.MessageContent,
+        IntentsBitField.Flags.GuildMessages,
+        IntentsBitField.Flags.GuildEmojisAndStickers,
       ],
     });
     client.maintainers = new Set<GuildMember>();
