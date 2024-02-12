@@ -1,6 +1,8 @@
 import { Client } from "discord.js";
 
 // Do not use the global regex flag, as it will cause the regex to be stateful
+// To get the emoji ID, type \:emoji: in discord (make sure to use emojis from the CSSA server,
+// or if a unicode emoji, enter the unicode char directly below rather than using the emoji ID)
 const REACTIONS: [RegExp, string][] = [
   [/\[object Object]/, "1206545314312626226"],
   [/cssa/i, "1021292640513302588"],
