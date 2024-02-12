@@ -1,50 +1,50 @@
 name: Deploy Crobot Service
 
-on: [push]  # Adjust this as per your triggering needs.
+on: [push] # Adjust this as per your triggering needs.
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the repository if needed
-    - name: Checkout
-      uses: actions/checkout@v2
+      # Checkout the repository if needed
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    # Install sshpass
-    - name: Install sshpass and openconnect
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y sshpass openconnect
+      # Install sshpass
+      - name: Install sshpass and openconnect
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass openconnect
 
-    # Connect to GlobalProtect using openconnect
-    - name: Connect to GlobalProtect
-      run: |
-        echo "${{ secrets.ANU_PASSWORD }}" | sudo openconnect https://student-access.anu.edu.au -u ${{ secrets.ANU_USERNAME }} --passwd-on-stdin --protocol=gp --background
+      # Connect to GlobalProtect using openconnect
+      - name: Connect to GlobalProtect
+        run: |
+          echo "${{ secrets.ANU_PASSWORD }}" | sudo openconnect https://student-access.anu.edu.au -u ${{ secrets.ANU_USERNAME }} --passwd-on-stdin --protocol=gp --background
 
-    # SSH and deploy the application using password
-    - name: SSH and deploy application
-      run: |
-        # Use sshpass to login as crobot-deploy
-        sshpass -p $CROBOT_DEPLOY_PASSWORD ssh -o StrictHostKeyChecking=no ${CROBOT_DEPLOY_USER}@cssa.anu.edu.au '
-          # Ensure we are in the right directory
-          cd /usr/local/libexec/crobot || exit 1
+      # SSH and deploy the application using password
+      - name: SSH and deploy application
+        run: |
+          # Use sshpass to login as crobot-deploy
+          sshpass -p $CROBOT_DEPLOY_PASSWORD ssh -o StrictHostKeyChecking=no ${CROBOT_DEPLOY_USER}@cssa.anu.edu.au '
+            # Ensure we are in the right directory
+            cd /usr/local/libexec/crobot || exit 1
 
-          # Pull the latest changes
-          git pull origin main
+            # Pull the latest changes
+            git pull origin main
 
-          # Your build commands go here
-          npm i
-          npm run build
-        '
+            # Your build commands go here
+            npm i
+            npm run build
+          '
 
-        # Restart the crobot service with the original admin user
-        # If the ANU_USERNAME can use passwordless sudo for the systemctl command, no need for sshpass here
-        sshpass -p $ANU_PASSWORD ssh -o StrictHostKeyChecking=no ${ANU_USER}@cssa.anu.edu.au '
-          echo "${{secrets.ANU_PASSWORD}}" | sudo -S systemctl restart crobot
-        '
-      env:
-        CROBOT_DEPLOY_USER: ${{ secrets.CROBOT_DEPLOY_USER }}
-        CROBOT_DEPLOY_PASSWORD: ${{ secrets.CROBOT_DEPLOY_PASSWORD }}
-        ANU_USER: ${{ secrets.ANU_USERNAME }}
-        ANU_PASSWORD: ${{ secrets.ANU_PASSWORD }}
+          # Restart the crobot service with the original admin user
+          # If the ANU_USERNAME can use passwordless sudo for the systemctl command, no need for sshpass here
+          sshpass -p $ANU_PASSWORD ssh -o StrictHostKeyChecking=no ${ANU_USER}@cssa.anu.edu.au '
+            echo "${{secrets.ANU_PASSWORD}}" | sudo -S systemctl restart crobot
+          '
+        env:
+          CROBOT_DEPLOY_USER: ${{ secrets.CROBOT_DEPLOY_USER }}
+          CROBOT_DEPLOY_PASSWORD: ${{ secrets.CROBOT_DEPLOY_PASSWORD }}
+          ANU_USER: ${{ secrets.ANU_USERNAME }}
+          ANU_PASSWORD: ${{ secrets.ANU_PASSWORD }}
