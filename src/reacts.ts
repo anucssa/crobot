@@ -3,6 +3,10 @@ import { Client } from "discord.js";
 // Do not use the global regex flag, as it will cause the regex to be stateful
 const REACTIONS: [RegExp, string][] = [
   [/\[object Object]/, "1206545314312626226"],
+  [/cssa/i, "1021292640513302588"],
+  [/cssslay/i, "1125375653605285888"],
+  [/sharepoint/i, "1036132153026691082"],
+  [/[ls]gtm/i, "962233144789049434"],
 ];
 
 export default function addReactionEvents(client: Client): void {
