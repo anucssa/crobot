@@ -9,15 +9,14 @@ const TEN_MINUTES = 1000 * 60 * 10;
 
 export class DoorServer {
   private readonly app: Express;
-  private readonly port: number = 8080;
   private timer?: NodeJS.Timeout = undefined;
   private readonly discordClient: Client<true>;
   private statusChannel: VoiceBasedChannel | undefined;
   private status = false;
 
-  constructor(discordClient: Client) {
+  constructor(discordClient: Client, express: Express) {
     this.discordClient = discordClient;
-    this.app = express();
+    this.app = express;
   }
 
   public async startServer(): Promise<void> {
@@ -55,15 +54,6 @@ export class DoorServer {
 
     this.app.post("/commonRoom/status", (request, response) => {
       this.updateCommonRoomStatus(request, response);
-    });
-
-    // Make all other http requests go to qpay
-    this.app.get("*", function (request, response) {
-      response.redirect("https://webapp.getqpay.com/");
-    });
-
-    this.app.listen(this.port, () => {
-      console.log(`CROBot listening on ${this.port}`);
     });
 
     this.timer = setTimeout(() => {
