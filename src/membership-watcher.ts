@@ -14,6 +14,11 @@ export class MembershipWatcher {
   }
 
   private getUser(id: String): GuildMember | undefined {
+    // New discord names are stored lowercase, and case insensitive
+    if (!id.includes("#")) {
+      id = id.toLowerCase();
+    }
+
     return this.cssa?.members.cache.find((u) => u.user.username == id);
   }
 
