@@ -1,10 +1,10 @@
 import express, { type Express, Request } from "express";
 import { GuildMember, type Client, Guild, Role } from "discord.js";
-import ITEM_FIELDS = Baserow.ITEM_FIELDS;
+import { BASEROW_ITEM_FIELDS, BaserowItem, BaserowWebhook } from "./baserow";
 
 export class MembershipWatcher {
   private readonly app: Express;
-  private readonly discordClient: Client<true>;
+  private readonly discordClient: Client<boolean>;
   private cssa: Guild | undefined;
   private memberRole: Role | undefined;
   private lifeMemberRole: Role | undefined;
@@ -14,7 +14,10 @@ export class MembershipWatcher {
     this.app = express;
   }
 
-  private async getUser(username: string): Promise<GuildMember | undefined> {
+  private async getUser(
+    username: string | null,
+  ): Promise<GuildMember | undefined> {
+    if (!username) return undefined;
     // New discord names are stored lowercase, and case insensitive
     if (!username.includes("#")) {
       username = username.toLowerCase();
@@ -56,12 +59,12 @@ export class MembershipWatcher {
         },
       },
     );
-    const tableData: { results: Baserow.Item[] } = await response.json();
+    const tableData: { results: BaserowItem[] } = await response.json();
 
     const set = new Set<GuildMember>();
 
     for (const item of tableData.results) {
-      const userName = item[ITEM_FIELDS.DISCORD_USERNAME];
+      const userName = item[BASEROW_ITEM_FIELDS.DISCORD_USERNAME];
       if (userName === null) continue;
       const user = await this.getUser(userName);
       if (user) set.add(user);
@@ -112,7 +115,7 @@ export class MembershipWatcher {
 
     this.app.post(
       "/membership/update",
-      async (request: Request<Baserow.Webhook>, response) => {
+      async (request: Request<BaserowWebhook>, response) => {
         if (request.headers["x-cssa-secret"] != process.env.WEBSOCKET_SECRET) {
           console.log("Illegal websocket update.");
           response.status(401).send();
@@ -121,7 +124,7 @@ export class MembershipWatcher {
         console.log("Got membership update.");
         await this.cssa?.members.fetch();
 
-        const webhookBody: Baserow.Webhook = request.body;
+        const webhookBody: BaserowWebhook = request.body;
         const old_users = new Set<GuildMember>();
         const new_users = new Set<GuildMember>();
 
@@ -130,11 +133,13 @@ export class MembershipWatcher {
 
         if (webhookBody.event_type == "rows.updated") {
           for (const item of webhookBody.old_items) {
-            if (item[ITEM_FIELDS.DISCORD_USERNAME] === null) continue;
+            if (item[BASEROW_ITEM_FIELDS.DISCORD_USERNAME] === null) continue;
             promises.push(
-              this.getUser(item[ITEM_FIELDS.DISCORD_USERNAME]).then((user) => {
-                if (user) old_users.add(user);
-              }),
+              this.getUser(item[BASEROW_ITEM_FIELDS.DISCORD_USERNAME]).then(
+                (user) => {
+                  if (user) old_users.add(user);
+                },
+              ),
             );
           }
         }
@@ -143,11 +148,13 @@ export class MembershipWatcher {
           webhookBody.event_type == "rows.updated"
         ) {
           for (const item of webhookBody.items) {
-            if (item[ITEM_FIELDS.DISCORD_USERNAME] === null) continue;
+            if (item[BASEROW_ITEM_FIELDS.DISCORD_USERNAME] === null) continue;
             promises.push(
-              this.getUser(item[ITEM_FIELDS.DISCORD_USERNAME]).then((user) => {
-                if (user) new_users.add(user);
-              }),
+              this.getUser(item[BASEROW_ITEM_FIELDS.DISCORD_USERNAME]).then(
+                (user) => {
+                  if (user) new_users.add(user);
+                },
+              ),
             );
           }
         }
