@@ -5,8 +5,7 @@ import { Client } from "discord.js";
 // or if a unicode emoji, enter the unicode char directly below rather than using the emoji ID)
 const REACTIONS: [RegExp, string][] = [
   [/\[object Object]/, "1206545314312626226"],
-  [/cssa/i, "1021292640513302588"],
-  [/cssslay/i, "1125375653605285888"],
+  [/cs{2,3}lay/i, "1125375653605285888"],
   [/sharepoint/i, "1036132153026691082"],
   [/[ls]gtm/i, "962233144789049434"],
 ];
