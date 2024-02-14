@@ -4,6 +4,7 @@ on: [push] # Adjust this as per your triggering needs.
 
 jobs:
   deploy:
+    if: false # Disable until ANU VPN issues are fixed
     runs-on: ubuntu-latest
 
     steps:
