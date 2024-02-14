@@ -2,7 +2,7 @@ import { Client, type GuildMember, IntentsBitField } from "discord.js";
 import { config } from "dotenv";
 import registerCommands from "./command-registry";
 
-export async function initDiscord(): Promise<Client<true>> {
+export async function initDiscord(): Promise<Client<boolean>> {
   return await new Promise((resolve, reject) => {
     config({ path: ".env" });
 
