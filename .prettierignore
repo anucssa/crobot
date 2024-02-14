@@ -3,3 +3,4 @@ dist
 .git
 node_modules
 data/*/**/*
+package-lock.json

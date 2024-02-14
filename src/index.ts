@@ -6,7 +6,7 @@ import serverIcon from "./icons/server-icon";
 import addReactionEvents from "./reacts";
 import { MembershipWatcher } from "./membership-watcher";
 
-const PORT: number = 8080;
+const PORT = 8080;
 
 async function main(): Promise<void> {
   const expressApp = express();

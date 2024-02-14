@@ -1,32 +1,37 @@
-import express, { type Express } from "express";
+import express, { type Express, Request } from "express";
 import { GuildMember, type Client, Guild, Role } from "discord.js";
+import ITEM_FIELDS = Baserow.ITEM_FIELDS;
 
 export class MembershipWatcher {
   private readonly app: Express;
   private readonly discordClient: Client<true>;
   private cssa: Guild | undefined;
-  private member_role: Role | undefined;
-  private lifemember_role: Role | undefined;
+  private memberRole: Role | undefined;
+  private lifeMemberRole: Role | undefined;
 
   constructor(discordClient: Client, express: Express) {
     this.discordClient = discordClient;
     this.app = express;
   }
 
-  private getUser(id: String): GuildMember | undefined {
+  private async getUser(username: string): Promise<GuildMember | undefined> {
     // New discord names are stored lowercase, and case insensitive
-    if (!id.includes("#")) {
-      id = id.toLowerCase();
+    if (!username.includes("#")) {
+      username = username.toLowerCase();
     }
 
-    return this.cssa?.members.cache.find((u) => u.user.username == id);
+    const member = await this.cssa?.members.fetch({ query: username });
+    for (const m of member?.values() ?? []) {
+      if (m.user.username === username) return m;
+    }
+    return undefined;
   }
 
   private async updateMembershipRole(
     usersWithRole: Set<GuildMember>,
     targetSet: Set<GuildMember>,
   ) {
-    const member = this.member_role;
+    const member = this.memberRole;
     if (!member) throw new Error("Null member role");
 
     for (const u of usersWithRole) {
@@ -42,7 +47,7 @@ export class MembershipWatcher {
     }
   }
 
-  private async fetchDBUsers(): Promise<Set<GuildMember>> {
+  private async fetchBaserowUsers(): Promise<Set<GuildMember>> {
     const response = await fetch(
       "https://baserow.cssa.club/api/database/rows/table/511/",
       {
@@ -51,12 +56,14 @@ export class MembershipWatcher {
         },
       },
     );
-    const json = await response.json();
+    const tableData: { results: Baserow.Item[] } = await response.json();
 
-    let set = new Set<GuildMember>();
+    const set = new Set<GuildMember>();
 
-    for (const item of json.results) {
-      const user = this.getUser(item.field_4760);
+    for (const item of tableData.results) {
+      const userName = item[ITEM_FIELDS.DISCORD_USERNAME];
+      if (userName === null) continue;
+      const user = await this.getUser(userName);
       if (user) set.add(user);
     }
 
@@ -65,15 +72,17 @@ export class MembershipWatcher {
 
   public async flushMembers() {
     console.log("Flushing members");
-    if (!this.cssa || !this.member_role || !this.lifemember_role)
+    if (!this.cssa || !this.memberRole || !this.lifeMemberRole)
       throw new Error("Null element");
 
     await this.cssa.members.fetch();
-    let withRole = new Set(this.member_role.members.map((u) => u));
-    let targetSet = await this.fetchDBUsers();
+    const withRole = new Set(this.memberRole.members.map((u) => u));
+    const targetSet = await this.fetchBaserowUsers();
 
     // Add life members to targetSet
-    this.lifemember_role.members.forEach((u) => targetSet.add(u));
+    for (const u of this.lifeMemberRole.members.values()) {
+      targetSet.add(u);
+    }
 
     await this.updateMembershipRole(withRole, targetSet);
   }
@@ -88,47 +97,67 @@ export class MembershipWatcher {
       process.env.CSSA_SERVER || "",
     );
 
-    if (!this.cssa) throw new Error();
+    if (!this.cssa) throw new Error("Couldn't fetch CSSA guild data.");
 
     await this.cssa.roles.fetch();
 
-    this.member_role = this.cssa.roles.cache.get("753524901708693558");
-    this.lifemember_role = this.cssa.roles.cache.get("702889882598506558");
-    if (!this.member_role || !this.lifemember_role)
+    this.memberRole = this.cssa.roles.cache.get("753524901708693558");
+    this.lifeMemberRole = this.cssa.roles.cache.get("702889882598506558");
+    if (!this.memberRole || !this.lifeMemberRole)
       throw new Error("Couldn't get roles.");
 
     await this.flushMembers();
 
     this.app.use(express.json());
 
-    this.app.post("/membership/update", async (request, response) => {
-      if (request.headers["x-cssa-secret"] != process.env.WEBSOCKET_SECRET) {
-        console.log("Illegal websocket update.");
-        response.status(401).send();
-        return;
-      }
-      console.log("Got membership update.");
-      await this.cssa?.members.fetch();
-
-      const req = request.body;
-      let old_users = new Set<GuildMember>();
-      let new_users = new Set<GuildMember>();
-      if (req.old_items) {
-        for (const item of req.old_items) {
-          const user = this.getUser(item.field_4760);
-          if (user) old_users.add(user);
+    this.app.post(
+      "/membership/update",
+      async (request: Request<Baserow.Webhook>, response) => {
+        if (request.headers["x-cssa-secret"] != process.env.WEBSOCKET_SECRET) {
+          console.log("Illegal websocket update.");
+          response.status(401).send();
+          return;
         }
-      }
-      if (req.items) {
-        for (const item of req.items) {
-          const user = this.getUser(item.field_4760);
-          if (user) new_users.add(user);
+        console.log("Got membership update.");
+        await this.cssa?.members.fetch();
+
+        const webhookBody: Baserow.Webhook = request.body;
+        const old_users = new Set<GuildMember>();
+        const new_users = new Set<GuildMember>();
+
+        // Collect all async operations for better concurrency
+        const promises: Promise<void>[] = [];
+
+        if (webhookBody.event_type == "rows.updated") {
+          for (const item of webhookBody.old_items) {
+            if (item[ITEM_FIELDS.DISCORD_USERNAME] === null) continue;
+            promises.push(
+              this.getUser(item[ITEM_FIELDS.DISCORD_USERNAME]).then((user) => {
+                if (user) old_users.add(user);
+              }),
+            );
+          }
         }
-      }
+        if (
+          webhookBody.event_type == "rows.created" ||
+          webhookBody.event_type == "rows.updated"
+        ) {
+          for (const item of webhookBody.items) {
+            if (item[ITEM_FIELDS.DISCORD_USERNAME] === null) continue;
+            promises.push(
+              this.getUser(item[ITEM_FIELDS.DISCORD_USERNAME]).then((user) => {
+                if (user) new_users.add(user);
+              }),
+            );
+          }
+        }
 
-      await this.updateMembershipRole(old_users, new_users);
+        await Promise.all(promises);
 
-      response.status(204).send();
-    });
+        await this.updateMembershipRole(old_users, new_users);
+
+        response.status(204).send();
+      },
+    );
   }
 }
