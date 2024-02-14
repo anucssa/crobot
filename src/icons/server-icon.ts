@@ -6,7 +6,7 @@ import { Buffer } from "node:buffer";
 import axios from "axios";
 import { startOfTomorrow } from "date-fns";
 
-export default function serverIcon(client: Client<true>): void {
+export default function serverIcon(client: Client<boolean>): void {
   config({ path: ".env" });
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
