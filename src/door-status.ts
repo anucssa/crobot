@@ -10,7 +10,7 @@ const TEN_MINUTES = 1000 * 60 * 10;
 export class DoorServer {
   private readonly app: Express;
   private timer?: NodeJS.Timeout = undefined;
-  private readonly discordClient: Client<true>;
+  private readonly discordClient: Client<boolean>;
   private statusChannel: VoiceBasedChannel | undefined;
   private status = false;
 
@@ -70,7 +70,7 @@ export class DoorServer {
     console.debug(JSON.stringify(request.body));
     if (request.body.code === process.env.STATUS_PWD) {
       if (request.body.state === "1") {
-        this.discordClient.user.setPresence({
+        this.discordClient.user?.setPresence({
           activities: [
             {
               name: "room is Open ✨",
@@ -82,7 +82,7 @@ export class DoorServer {
         this.status = true;
         void this.statusChannel?.setName("CR is open!");
       } else {
-        this.discordClient.user.setPresence({
+        this.discordClient.user?.setPresence({
           activities: [
             {
               name: "room is Closed",
@@ -109,7 +109,7 @@ export class DoorServer {
   private timeout(): void {
     if (this.discordClient === undefined)
       throw new Error("Discord Client not set");
-    this.discordClient.user.setPresence({
+    this.discordClient.user?.setPresence({
       activities: [
         {
           name: "sensor dead poke #general",
