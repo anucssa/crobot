@@ -36,12 +36,14 @@ export async function refreshBaserowData() {
   // Fire events for onRowCreate, onRowUpdate, onRowDelete as necessary
   const fetchedData: BaserowItem[] = [];
   let nextUrl: string | null =
-    "https://baserow.cssa.club/api/database/rows/table/511/?size=200";
+    "https://baserow.cssa.club/api/database/rows/table/511/";
   while (nextUrl) {
     // eslint-disable-next-line no-await-in-loop
-    const baserowPage: BaserowGetRowsResponse = await fetch(nextUrl).then(
-      (response) => response.json(),
-    );
+    const baserowPage: BaserowGetRowsResponse = await fetch(nextUrl, {
+      headers: new Headers({
+        Authorization: `Token ${process.env.BASEROW_TOKEN}`,
+      }),
+    }).then((response) => response.json());
     fetchedData.push(...baserowPage.results);
     nextUrl = baserowPage.next;
   }
