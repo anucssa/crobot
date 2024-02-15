@@ -52,7 +52,7 @@ export class MembershipWatcher {
 
   private async fetchBaserowUsers(): Promise<Set<GuildMember>> {
     const response = await fetch(
-      "https://baserow.cssa.club/api/database/rows/table/511/?size=5000",
+      "https://baserow.cssa.club/api/database/rows/table/511/?size=200",
       {
         headers: {
           Authorization: "Token " + process.env.BASEROW_TOKEN,
