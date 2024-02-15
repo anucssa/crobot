@@ -1,9 +1,10 @@
 import express, { type Express } from "express";
+import { ClientPresenceStatus } from "discord.js";
 
 const TEN_MINUTES = 1000 * 60 * 10;
 
 // Helper functions to set the presence text and status channel name
-const setPresenceText = (text: string) =>
+const setPresenceText = (text: string, status: ClientPresenceStatus) =>
   discordClient.user.setPresence({
     activities: [
       {
@@ -11,7 +12,7 @@ const setPresenceText = (text: string) =>
         type: 3,
       },
     ],
-    status: "idle",
+    status,
   });
 
 export async function attachDoorServer(app: Express) {
@@ -29,7 +30,7 @@ export async function attachDoorServer(app: Express) {
     throw new Error("Status channel is not a voice channel");
   const setStatusChannelName = (name: string) => statusChannel.setName(name);
 
-  setPresenceText("the door sensor boot");
+  setPresenceText("the door sensor boot", "idle");
   await setStatusChannelName("CR is loading...");
 
   // Assume the door is closed until we hear otherwise
@@ -41,7 +42,7 @@ export async function attachDoorServer(app: Express) {
   }, TEN_MINUTES);
 
   const timeout = () => {
-    setPresenceText("sensor dead poke #general");
+    setPresenceText("sensor dead poke #general", "idle");
     setStatusChannelName("CR is missing :|");
     timer = undefined;
   };
@@ -65,11 +66,11 @@ export async function attachDoorServer(app: Express) {
     // Update the status and the presence text
     if (request.body.state === "1") {
       status = true;
-      setPresenceText("room is Open ✨");
+      setPresenceText("room is Open ✨", "online");
       setStatusChannelName("CR is open!");
     } else {
       status = false;
-      setPresenceText("room is Closed");
+      setPresenceText("room is Closed", "dnd");
       setStatusChannelName("CR is closed");
     }
 
