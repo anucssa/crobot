@@ -20,8 +20,7 @@ export function startServerIcon(): void {
 
   async function setNewIcon(): Promise<void> {
     const newIcon = await getNewIcon();
-    const cssa = await discordClient.guilds.fetch("476382037620555776");
-    await cssa.setIcon(newIcon);
+    await cssaGuild.setIcon(newIcon);
   }
 
   async function getNewIcon(): Promise<Buffer> {

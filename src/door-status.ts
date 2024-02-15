@@ -21,8 +21,6 @@ export async function attachDoorServer(app: Express) {
     );
 
   // Get the channel from the CSSA discord server
-  const cssaGuild = await discordClient.guilds.fetch("476382037620555776");
-
   const statusChannel =
     (await cssaGuild.channels.fetch("1060799214550007849")) ?? undefined;
   if (statusChannel === undefined)

@@ -20,6 +20,9 @@ async function main(): Promise<void> {
   // with any subsequent code using it that the value will exist and be of the correct type.
   // This means that this line must be executed before any other code that uses globalThis.discordClient.
   globalThis.discordClient = await initDiscord();
+  globalThis.cssaGuild = await discordClient.guilds.fetch(
+    process.env.CSSA_SERVER!,
+  );
   await registerCommands();
 
   // Initialise the express app and attach the door server

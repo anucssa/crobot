@@ -6,7 +6,7 @@ import {
   BaserowWebhook,
 } from "./baserow-types";
 import express, { Express, Request } from "express";
-import { Guild, GuildMember, Snowflake } from "discord.js";
+import { GuildMember, Snowflake } from "discord.js";
 
 const baserowData: Map<number, BaserowItem> = new Map();
 const MEMBER_ROLE_ID = "753524901708693558";
@@ -38,6 +38,11 @@ export async function refreshBaserowData() {
   // Fetch data from baserow
   // Store in baserowData
   // Fire events for onRowCreate, onRowUpdate, onRowDelete as necessary
+
+  // Force update all discord members
+  await cssaGuild.fetch();
+  await cssaGuild.members.fetch();
+
   const fetchedData: BaserowItem[] = [];
   let nextUrl: string | null =
     "https://baserow.cssa.club/api/database/rows/table/511/";
@@ -77,8 +82,6 @@ export async function refreshBaserowData() {
   }
 
   // Drop any members not in the fetched data
-  const cssaGuild = await discordClient.guilds.fetch(CSSA_SERVER_ID);
-  if (!cssaGuild) throw new Error("Couldn't fetch CSSA guild data.");
   const memberRole = await cssaGuild.roles.fetch(MEMBER_ROLE_ID);
   if (!memberRole) throw new Error("Couldn't get member role.");
   const members = memberRole.members;
@@ -99,7 +102,9 @@ export async function refreshBaserowData() {
       eventPromises.push(member.roles.remove(memberRole));
   }
 
-  return Promise.all(eventPromises);
+  return Promise.all(eventPromises).then(() => {
+    console.log("Baserow data refreshed.");
+  });
 }
 
 export async function attachBaserowWebhookListener(expressApp: Express) {
@@ -175,20 +180,22 @@ export async function attachBaserowWebhookListener(expressApp: Express) {
 
 class MemberNotFoundError extends Error {}
 
-async function getGuildAndUser(
-  guildId: string,
-  rawUsername: string,
-): Promise<[Guild, GuildMember]> {
+async function getUser(rawUsername: string): Promise<GuildMember> {
   const [username, discriminator] = transformUsername(rawUsername);
-  const guild = await discordClient.guilds.fetch(guildId);
-  if (!guild) throw new Error("Couldn't fetch guild data.");
-  const matchingMembers = await guild.members.fetch({ query: username });
-  for (const member of matchingMembers.values()) {
+  for (const member of cssaGuild.members.cache.values()) {
     if (
       member.user.username === username &&
       member.user.discriminator === discriminator.toString(10)
     )
-      return [guild, member];
+      return member;
+  }
+  const fetchedMembers = await cssaGuild.members.fetch({ query: username });
+  for (const member of fetchedMembers.values()) {
+    if (
+      member.user.username === username &&
+      member.user.discriminator === discriminator.toString(10)
+    )
+      return member;
   }
   console.log(`Couldn't find member in guild: ${username}#${discriminator}`);
   throw new MemberNotFoundError("Couldn't find member in guild: " + username);
@@ -199,17 +206,24 @@ export async function performRoleUpdate(
   roleType: "member" | "lifeMember",
   operation: "add" | "remove",
 ) {
-  const [guild, member] = await getGuildAndUser(CSSA_SERVER_ID, username);
-  const role = await guild.roles.fetch(
-    roleType === "member" ? MEMBER_ROLE_ID : LIFE_MEMBER_ROLE_ID,
-  );
-  if (!role) throw new Error("Couldn't get role.");
+  const member = await getUser(username);
+  const roleId = roleType === "member" ? MEMBER_ROLE_ID : LIFE_MEMBER_ROLE_ID;
+  const alreadySatisfied =
+    operation === "add"
+      ? member.roles.cache.has(roleId)
+      : !member.roles.cache.has(roleId);
+  if (alreadySatisfied) {
+    console.log(
+      `Role update not required: ${operation} ${roleType} for ${username}`,
+    );
+    return;
+  }
   console.log(
     `Performing role update: ${operation} ${roleType} for ${username}`,
   );
   await (operation === "add"
-    ? member.roles.add(role)
-    : member.roles.remove(role));
+    ? member.roles.add(roleId)
+    : member.roles.remove(roleId));
 }
 
 export async function onRowCreate(row: BaserowItem) {
