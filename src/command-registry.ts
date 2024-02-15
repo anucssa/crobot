@@ -1,43 +1,35 @@
-import { type Client, Collection, Events } from "discord.js";
-import * as fs from "node:fs/promises";
-import path from "node:path";
+import { Collection, Events, REST, Routes } from "discord.js";
+import * as commandDefinitions from "./commands";
 
-export default async function registerCommands(client: Client): Promise<void> {
-  client.commands = new Collection();
+export default async function registerCommands(): Promise<void> {
+  const commands = new Collection(Object.entries(commandDefinitions));
 
-  const commandsPath =
-    process.env.NODE_ENV === "development"
-      ? "./dist/commands/"
-      : "/usr/local/libexec/crobot/dist/commands/";
-  let commandFiles = await fs.readdir(commandsPath);
-  commandFiles = commandFiles.filter((file) => file.endsWith(".js"));
-
-  await Promise.all(
-    commandFiles.map(async (file) => {
-      const filePath =
-        process.env.NODE_ENV === "development"
-          ? "." + commandsPath + file
-          : path.join(commandsPath, file);
-      const command = await import(filePath);
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions -- Weird eslint misfire ¯\_(ツ)_/¯
-      if (Object.hasOwn(command, "data") && Object.hasOwn(command, "execute")) {
-        client.commands.set(command.data.name, command);
-      } else {
-        console.warn(
-          `The command at ${filePath} is missing a required "data" or "execute" property.`,
-        );
-      }
-    }),
+  // Deploy the command definitions to the Discord API
+  const rest = new REST({ version: "10" }).setToken(
+    process.env.DISCORD_TOKEN ?? "",
+  );
+  // The put method is used to fully refresh all commands in the guild with the current set
+  await rest.put(
+    Routes.applicationGuildCommands(
+      process.env.CLIENT_ID ?? "",
+      process.env.CSSA_SERVER ?? "",
+    ),
+    {
+      body: [...commands.values()].map((commandDefinition) =>
+        commandDefinition.data.toJSON(),
+      ),
+    },
   );
 
-  client.on(Events.InteractionCreate, async (interaction) => {
+  // Register the commands with the client
+  discordClient.on(Events.InteractionCreate, async (interaction) => {
     if (
       !interaction.isChatInputCommand() &&
       !interaction.isMessageContextMenuCommand()
     )
       return;
 
-    const command = interaction.client.commands.get(interaction.commandName);
+    const command = commands.get(interaction.commandName);
 
     if (command === undefined || command === null) {
       console.error(
@@ -52,7 +44,7 @@ export default async function registerCommands(client: Client): Promise<void> {
     } catch (error) {
       console.error(error);
       const maintainers: string[] = [];
-      for (const maintainer of client.maintainers) {
+      for (const maintainer of appMaintainers) {
         maintainers.push(`<@${maintainer.id}>`);
       }
       let maintainersText = "";

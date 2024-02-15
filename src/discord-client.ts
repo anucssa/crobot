@@ -1,8 +1,8 @@
-import { Client, type GuildMember, IntentsBitField } from "discord.js";
+import { Client, IntentsBitField } from "discord.js";
 import { config } from "dotenv";
 import registerCommands from "./command-registry";
 
-export async function initDiscord(): Promise<Client<boolean>> {
+export async function initDiscord(): Promise<Client<true>> {
   return await new Promise((resolve, reject) => {
     config({ path: ".env" });
 
@@ -15,9 +15,8 @@ export async function initDiscord(): Promise<Client<boolean>> {
         IntentsBitField.Flags.GuildEmojisAndStickers,
       ],
     });
-    client.maintainers = new Set<GuildMember>();
 
-    void registerCommands(client);
+    void registerCommands();
 
     client.on("ready", () => {
       console.log(
@@ -36,7 +35,7 @@ export async function initDiscord(): Promise<Client<boolean>> {
               server.members
                 .fetch(maintainerId)
                 .then((maintainer) => {
-                  client.maintainers.add(maintainer);
+                  appMaintainers.push(maintainer);
                 })
                 .catch(console.error);
             }
@@ -44,7 +43,12 @@ export async function initDiscord(): Promise<Client<boolean>> {
           .catch(console.error);
       }
 
-      resolve(client);
+      if (client.isReady()) resolve(client);
+      else {
+        reject(
+          new Error("client.on('ready') fired but client.isReady() is false."),
+        );
+      }
     });
 
     client.login(process.env.DISCORD_TOKEN).catch(reject);

@@ -3,6 +3,7 @@ import {
   SlashCommandBuilder,
   PermissionsBitField,
 } from "discord.js";
+import { refreshBaserowData } from "../baserow-integration";
 
 export const data = new SlashCommandBuilder()
   .setName("flushmembers")
@@ -36,7 +37,7 @@ export async function execute(
     return;
   }
 
-  await interaction.client.membershipWatcher.flushMembers();
+  await refreshBaserowData();
 
   await interaction.reply({
     content: "Members role flushed.",

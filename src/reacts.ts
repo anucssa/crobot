@@ -1,5 +1,3 @@
-import { Client } from "discord.js";
-
 // Do not use the global regex flag, as it will cause the regex to be stateful
 // To get the emoji ID, type \:emoji: in discord (make sure to use emojis from the CSSA server,
 // or if a unicode emoji, enter the unicode char directly below rather than using the emoji ID)
@@ -10,11 +8,11 @@ const REACTIONS: [RegExp, string][] = [
   [/[ls]gtm/i, "962233144789049434"],
 ];
 
-export default function addReactionEvents(client: Client): void {
+export default function addReactionEvents(): void {
   // Verify that the reactions are consistent
   for (const [regex, emoji] of REACTIONS) {
     // Verify that the emoji exists
-    if (!client.emojis.cache.has(emoji)) {
+    if (!discordClient.emojis.cache.has(emoji)) {
       throw new Error(`Emoji ${emoji} not found`);
     }
     // Verify that the regex is stateless
@@ -24,7 +22,7 @@ export default function addReactionEvents(client: Client): void {
   }
 
   // Add a reaction to a message if it matches a regex
-  client.on("messageCreate", (message) => {
+  discordClient.on("messageCreate", (message) => {
     const messageContent = message.content;
     for (const [regex, emoji] of REACTIONS) {
       if (regex.test(messageContent)) {

@@ -1,28 +1,32 @@
 import express from "express";
 
 import { initDiscord } from "./discord-client";
-import { DoorServer } from "./door-status";
-import serverIcon from "./icons/server-icon";
+import { attachDoorServer } from "./door-status";
 import addReactionEvents from "./reacts";
-import { MembershipWatcher } from "./membership-watcher";
+import { attachBaserowWebhookListener } from "./baserow-integration";
+import { startServerIcon } from "./server-icon";
 
 const PORT = 8080;
+globalThis.appMaintainers = [];
 
 async function main(): Promise<void> {
+  // Initialise the discord client
+  // The type of globalThis.discordClient is strictly defined, so we're making an implicit contract
+  // with any subsequent code using it that the value will exist and be of the correct type.
+  // This means that this line must be executed before any other code that uses globalThis.discordClient.
+  globalThis.discordClient = await initDiscord();
+
+  // Initialise the express app and attach the door server
   const expressApp = express();
+  await attachDoorServer(expressApp);
+  await attachBaserowWebhookListener(expressApp);
 
-  const client = await initDiscord();
-  const doorServer = new DoorServer(client, expressApp);
-  const membershipWatcher = new MembershipWatcher(client, expressApp);
-  client.membershipWatcher = membershipWatcher;
-  serverIcon(client);
-  addReactionEvents(client);
-
-  await membershipWatcher.startServer();
-  await doorServer.startServer();
+  // Start the server icon and add reaction events
+  startServerIcon();
+  addReactionEvents();
 
   // Make all other http requests go to cssa.club
-  expressApp.get("*", function (request, response) {
+  expressApp.get("*", function (_, response) {
     response.redirect("https://cssa.club/");
   });
 

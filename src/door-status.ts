@@ -1,124 +1,87 @@
 import express, { type Express } from "express";
-import {
-  type Client,
-  type VoiceBasedChannel,
-  type VoiceChannel,
-} from "discord.js";
 
 const TEN_MINUTES = 1000 * 60 * 10;
 
-export class DoorServer {
-  private readonly app: Express;
-  private timer?: NodeJS.Timeout = undefined;
-  private readonly discordClient: Client<boolean>;
-  private statusChannel: VoiceBasedChannel | undefined;
-  private status = false;
+// Helper functions to set the presence text and status channel name
+const setPresenceText = (text: string) =>
+  discordClient.user.setPresence({
+    activities: [
+      {
+        name: text,
+        type: 3,
+      },
+    ],
+    status: "idle",
+  });
 
-  constructor(discordClient: Client, express: Express) {
-    this.discordClient = discordClient;
-    this.app = express;
-  }
+export async function attachDoorServer(app: Express) {
+  if (!discordClient?.isReady())
+    throw new Error(
+      "Door Status Server initialised before discord client ready.",
+    );
 
-  public async startServer(): Promise<void> {
-    if (!this.discordClient.isReady())
-      throw new Error(
-        "Door Status Server initialised before discord client ready.",
-      );
+  // Get the channel from the CSSA discord server
+  const cssaGuild = await discordClient.guilds.fetch("476382037620555776");
 
-    const cssa = await this.discordClient.guilds.fetch("476382037620555776");
-    const statusChannel =
-      (await cssa.channels.fetch("1060799214550007849")) ?? undefined;
-    if (statusChannel?.isVoiceBased() === true) {
-      this.statusChannel = statusChannel as VoiceChannel;
-    }
-    if (this.statusChannel === undefined)
-      throw new Error("Could not find status channel");
+  const statusChannel =
+    (await cssaGuild.channels.fetch("1060799214550007849")) ?? undefined;
+  if (statusChannel === undefined)
+    throw new Error("Could not find status channel");
+  if (statusChannel.isVoiceBased() === false)
+    throw new Error("Status channel is not a voice channel");
+  const setStatusChannelName = (name: string) => statusChannel.setName(name);
 
-    this.discordClient.user?.setPresence({
-      activities: [
-        {
-          name: "the door sensor boot",
-          type: 3,
-        },
-      ],
-      status: "idle",
-    });
-    await this.statusChannel?.setName("CR is loading...");
+  setPresenceText("the door sensor boot");
+  await setStatusChannelName("CR is loading...");
 
-    this.app.use(express.urlencoded({ extended: true }));
+  // Assume the door is closed until we hear otherwise
+  let status: boolean = false;
 
-    this.app.get("/commonRoom/status", (request, response) => {
-      response.set("Content-Type", "application/json");
-      response.send(JSON.stringify({ status: this.status }));
-    });
+  // Set a timer to show an error message if the sensor doesn't check in
+  let timer: NodeJS.Timeout | undefined = setTimeout(() => {
+    timeout();
+  }, TEN_MINUTES);
 
-    this.app.post("/commonRoom/status", (request, response) => {
-      this.updateCommonRoomStatus(request, response);
-    });
+  const timeout = () => {
+    setPresenceText("sensor dead poke #general");
+    setStatusChannelName("CR is missing :|");
+    timer = undefined;
+  };
 
-    this.timer = setTimeout(() => {
-      this.timeout();
-    }, TEN_MINUTES);
-  }
+  // Configure the express app
+  app.use(express.urlencoded({ extended: true }));
 
-  private updateCommonRoomStatus(
-    request: Parameters<Parameters<typeof this.app.post>[1]>[0],
-    response: Parameters<Parameters<typeof this.app.post>[1]>[1],
-  ): void {
-    if (this.discordClient === undefined)
-      throw new Error("Discord Client not set");
-    console.debug(JSON.stringify(request.body));
-    if (request.body.code === process.env.STATUS_PWD) {
-      if (request.body.state === "1") {
-        this.discordClient.user?.setPresence({
-          activities: [
-            {
-              name: "room is Open ✨",
-              type: 3,
-            },
-          ],
-          status: "online",
-        });
-        this.status = true;
-        void this.statusChannel?.setName("CR is open!");
-      } else {
-        this.discordClient.user?.setPresence({
-          activities: [
-            {
-              name: "room is Closed",
-              type: 3,
-            },
-          ],
-          status: "dnd",
-        });
-        this.status = false;
-        void this.statusChannel?.setName("CR is closed");
-      }
+  // Expose the status of the door sensor to other apps
+  app.get("/commonRoom/status", (_, response) => {
+    response.set("Content-Type", "application/json");
+    response.send(JSON.stringify({ status }));
+  });
 
-      // Reset timer
-      if (this.timer !== null) clearTimeout(this.timer);
-      this.timer = setTimeout(() => {
-        this.timeout();
-      }, TEN_MINUTES);
-      response.end(request.body.status);
-    } else {
+  // Listen for updates from the door sensor
+  app.post("/commonRoom/status", (request, response) => {
+    // Validate the request with a secret code
+    if (request.body.code !== process.env.STATUS_PWD) {
       response.end("Invalid code");
+      return;
     }
-  }
+    // Update the status and the presence text
+    if (request.body.state === "1") {
+      status = true;
+      setPresenceText("room is Open ✨");
+      setStatusChannelName("CR is open!");
+    } else {
+      status = false;
+      setPresenceText("room is Closed");
+      setStatusChannelName("CR is closed");
+    }
 
-  private timeout(): void {
-    if (this.discordClient === undefined)
-      throw new Error("Discord Client not set");
-    this.discordClient.user?.setPresence({
-      activities: [
-        {
-          name: "sensor dead poke #general",
-          type: 3,
-        },
-      ],
-      status: "idle",
-    });
-    void this.statusChannel?.setName("CR is missing :|");
-    this.timer = undefined;
-  }
+    // Reset timer for the next check-in
+    if (timer !== null) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timeout();
+    }, TEN_MINUTES);
+
+    // Send a response to the sensor to confirm the status update
+    response.end(request.body.status);
+  });
 }

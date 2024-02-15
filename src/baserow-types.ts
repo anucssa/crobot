@@ -43,6 +43,13 @@ export type BaserowWebhook =
   | BaserowUpdatedWebhook
   | BaserowDeletedWebhook;
 
+export interface BaserowGetRowsResponse {
+  count: number;
+  next: Nullable<string>;
+  previous: Nullable<string>;
+  results: BaserowItem[];
+}
+
 export interface BaserowItem {
   id: number;
   order: string;
@@ -82,3 +89,19 @@ type BaserowFlags =
       color: "purple";
       value: "CRO";
     };
+
+export function areItemsEqual(a: BaserowItem, b: BaserowItem): boolean {
+  if (a.id !== b.id) return false;
+  for (const field of Object.values(BASEROW_ITEM_FIELDS)) {
+    if (field === BASEROW_ITEM_FIELDS.FLAGS) {
+      if (a[field].length !== b[field].length) return false;
+      for (let index = 0; index < a[field].length; index++) {
+        if (a[field][index].id !== b[field][index].id) return false;
+        if (a[field][index].color !== b[field][index].color) return false;
+        if (a[field][index].value !== b[field][index].value) return false;
+      }
+    }
+    if (a[field] !== b[field]) return false;
+  }
+  return true;
+}

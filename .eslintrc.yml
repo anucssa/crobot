@@ -17,4 +17,5 @@ plugins:
   - "@typescript-eslint"
 rules:
   unicorn/prefer-top-level-await: off
+  no-await-in-loop: error
 root: true

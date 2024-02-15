@@ -1,12 +1,10 @@
-// Factory patterns baby
-import { type Client } from "discord.js";
 import { config } from "dotenv";
 import { Octokit } from "@octokit/rest";
 import { Buffer } from "node:buffer";
 import axios from "axios";
 import { startOfTomorrow } from "date-fns";
 
-export default function serverIcon(client: Client<boolean>): void {
+export function startServerIcon(): void {
   config({ path: ".env" });
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
@@ -24,7 +22,7 @@ export default function serverIcon(client: Client<boolean>): void {
 
   async function setNewIcon(): Promise<void> {
     const newIcon = await getNewIcon();
-    const cssa = await client.guilds.fetch("476382037620555776");
+    const cssa = await discordClient.guilds.fetch("476382037620555776");
     await cssa.setIcon(newIcon);
   }
 
