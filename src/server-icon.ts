@@ -1,11 +1,9 @@
-import { config } from "dotenv";
 import { Octokit } from "@octokit/rest";
 import { Buffer } from "node:buffer";
 import axios from "axios";
 import { startOfTomorrow } from "date-fns";
 
 export function startServerIcon(): void {
-  config({ path: ".env" });
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
     timeZone: "Australia/Sydney",

@@ -1,6 +1,5 @@
 import { Client, IntentsBitField } from "discord.js";
 import { config } from "dotenv";
-import registerCommands from "./command-registry";
 
 export async function initDiscord(): Promise<Client<true>> {
   return await new Promise((resolve, reject) => {
@@ -15,8 +14,6 @@ export async function initDiscord(): Promise<Client<true>> {
         IntentsBitField.Flags.GuildEmojisAndStickers,
       ],
     });
-
-    void registerCommands();
 
     client.on("ready", () => {
       console.log(
@@ -43,8 +40,13 @@ export async function initDiscord(): Promise<Client<true>> {
           .catch(console.error);
       }
 
-      if (client.isReady()) resolve(client);
-      else {
+      if (client.isReady()) {
+        client.guilds
+          .fetch(process.env.CSSA_SERVER!)
+          .then((guild) => guild.members.fetch())
+          .then(() => resolve(client))
+          .catch(reject);
+      } else {
         reject(
           new Error("client.on('ready') fired but client.isReady() is false."),
         );

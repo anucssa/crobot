@@ -6,22 +6,26 @@ import {
   BaserowWebhook,
 } from "./baserow-types";
 import express, { Express, Request } from "express";
-import { Guild, GuildMember } from "discord.js";
+import { Guild, GuildMember, Snowflake } from "discord.js";
 
 const baserowData: Map<number, BaserowItem> = new Map();
 const MEMBER_ROLE_ID = "753524901708693558";
 const LIFE_MEMBER_ROLE_ID = "702889882598506558";
-const CSSA_SERVER_ID = process.env.CSSA_SERVER || "";
+const CSSA_SERVER_ID = process.env.CSSA_SERVER as Snowflake;
+if (!CSSA_SERVER_ID) throw new Error("CSSA_SERVER not set.");
 
-function transformUsername(username: string): string;
-function transformUsername(username: string | null): string | undefined;
-function transformUsername(username: string | null): string | undefined {
+function transformUsername(username: string): [string, number];
+function transformUsername(
+  username: string | null,
+): [string, number] | undefined {
   if (username === null) return undefined;
   // New discord names are stored lowercase, and case insensitive
   if (!username.includes("#")) {
     username = username.toLowerCase();
-    return username;
+    return [username, 0];
   }
+  const [name, discriminator] = username.split("#");
+  return [name, Number.parseInt(discriminator, 10)];
 }
 
 const isLifeMember = (item: BaserowItem): boolean => {
@@ -78,13 +82,20 @@ export async function refreshBaserowData() {
   const memberRole = await cssaGuild.roles.fetch(MEMBER_ROLE_ID);
   if (!memberRole) throw new Error("Couldn't get member role.");
   const members = memberRole.members;
-  const memberUsernames = new Set(
-    fetchedData
-      .map((item) => item[BASEROW_ITEM_FIELDS.DISCORD_USERNAME])
-      .map((username) => transformUsername(username)),
-  );
+  const memberUsernames: Map<string, Set<number>> = new Map();
+  for (const item of fetchedData) {
+    const username = item[BASEROW_ITEM_FIELDS.DISCORD_USERNAME];
+    if (!username) continue;
+    const [name, discriminator] = transformUsername(username);
+    if (!memberUsernames.has(name)) memberUsernames.set(name, new Set());
+    memberUsernames.get(name)?.add(discriminator);
+  }
   for (const member of members.values()) {
-    if (!memberUsernames.has(member.user.username))
+    const validDiscriminators = memberUsernames.get(member.user.username);
+    if (
+      validDiscriminators === undefined ||
+      !validDiscriminators.has(Number.parseInt(member.user.discriminator, 10))
+    )
       eventPromises.push(member.roles.remove(memberRole));
   }
 
@@ -166,16 +177,21 @@ class MemberNotFoundError extends Error {}
 
 async function getGuildAndUser(
   guildId: string,
-  username: string,
+  rawUsername: string,
 ): Promise<[Guild, GuildMember]> {
-  username = transformUsername(username);
+  const [username, discriminator] = transformUsername(rawUsername);
   const guild = await discordClient.guilds.fetch(guildId);
   if (!guild) throw new Error("Couldn't fetch guild data.");
   const matchingMembers = await guild.members.fetch({ query: username });
   for (const member of matchingMembers.values()) {
-    if (member.user.username === username) return [guild, member];
+    if (
+      member.user.username === username &&
+      member.user.discriminator === discriminator.toString(10)
+    )
+      return [guild, member];
   }
-  throw new MemberNotFoundError("Couldn't find member in guild.");
+  console.log(`Couldn't find member in guild: ${username}#${discriminator}`);
+  throw new MemberNotFoundError("Couldn't find member in guild: " + username);
 }
 
 export async function performRoleUpdate(
@@ -188,6 +204,9 @@ export async function performRoleUpdate(
     roleType === "member" ? MEMBER_ROLE_ID : LIFE_MEMBER_ROLE_ID,
   );
   if (!role) throw new Error("Couldn't get role.");
+  console.log(
+    `Performing role update: ${operation} ${roleType} for ${username}`,
+  );
   await (operation === "add"
     ? member.roles.add(role)
     : member.roles.remove(role));
@@ -202,7 +221,9 @@ export async function onRowCreate(row: BaserowItem) {
       await performRoleUpdate(username, "lifeMember", "add");
     }
   } catch (error) {
-    console.warn("Error while processing onRowCreate:", error);
+    if (!(error instanceof MemberNotFoundError)) {
+      console.warn("Error while processing onRowCreate:", error);
+    }
   }
 }
 
@@ -230,7 +251,9 @@ export async function onRowUpdate(row: BaserowItem, oldRow: BaserowItem) {
           await performRoleUpdate(newUsername, "lifeMember", "add");
         }
       } catch (error) {
-        console.warn("Error while processing onRowUpdate:", error);
+        if (!(error instanceof MemberNotFoundError)) {
+          console.warn("Error while processing onRowUpdate:", error);
+        }
       }
     }
   }
@@ -243,7 +266,9 @@ export async function onRowUpdate(row: BaserowItem, oldRow: BaserowItem) {
     try {
       await performRoleUpdate(username, "lifeMember", "add");
     } catch (error) {
-      console.warn("Error while processing onRowUpdate:", error);
+      if (!(error instanceof MemberNotFoundError)) {
+        console.warn("Error while processing onRowUpdate:", error);
+      }
     }
   }
 }
