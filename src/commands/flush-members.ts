@@ -3,7 +3,7 @@ import {
   SlashCommandBuilder,
   PermissionsBitField,
 } from "discord.js";
-import { refreshBaserowData } from "../baserow-integration";
+import { refreshDBData } from "../nocodb-integration";
 
 export const data = new SlashCommandBuilder()
   .setName("flushmembers")
@@ -37,7 +37,7 @@ export async function execute(
     return;
   }
 
-  await refreshBaserowData();
+  await refreshDBData();
 
   await interaction.reply({
     content: "Members role flushed.",

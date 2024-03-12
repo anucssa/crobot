@@ -34,7 +34,7 @@ export async function attachDoorServer(app: Express) {
   await setStatusChannelName("CR is loading...");
 
   // Assume the door is closed until we hear otherwise
-  let status: boolean = false;
+  let status = false;
 
   // Set a timer to show an error message if the sensor doesn't check in
   let timer: NodeJS.Timeout | undefined = setTimeout(() => {
