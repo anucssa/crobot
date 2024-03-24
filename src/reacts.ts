@@ -6,6 +6,7 @@ const REACTIONS: [RegExp, string][] = [
   [/cs{2,3}lay/i, "1125375653605285888"],
   [/sharepoint/i, "1036132153026691082"],
   [/[ls]gtm/i, "962233144789049434"],
+  [/cs(?:sa)?ball/i, "1221369746927386624"],
 ];
 
 export default function addReactionEvents(): void {
