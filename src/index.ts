@@ -10,6 +10,7 @@ import addReactionEvents from "./reacts";
 import { attachNocoDBWebhookListener } from "./nocodb-integration";
 import { startServerIcon } from "./server-icon";
 import registerCommands from "./command-registry";
+import addStageOne from "./secret";
 
 const PORT = 8080;
 globalThis.appMaintainers = [];
@@ -24,6 +25,9 @@ async function main(): Promise<void> {
     process.env.CSSA_SERVER!,
   );
   await registerCommands();
+
+  // Spooky secret things
+  addStageOne();
 
   // Initialise the express app and attach the door server
   const expressApp = express();
