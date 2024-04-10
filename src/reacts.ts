@@ -8,6 +8,7 @@ const REACTIONS: [RegExp, string][] = [
   [/[ls]gtm/i, "962233144789049434"],
   [/cs(?:sa)?ball/i, "1221369746927386624"],
   [/typ[s$]t/i, "1222501775584788600"],
+  [/latex/i, "1227561586701635626"],
 ];
 
 export default function addReactionEvents(): void {
