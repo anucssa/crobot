@@ -29,7 +29,9 @@ export default async function registerCommands(): Promise<void> {
     )
       return;
 
-    const command = commands.get(interaction.commandName);
+    const command = commands.find(
+      (c) => c.data.name === interaction.commandName,
+    );
 
     if (command === undefined || command === null) {
       console.error(
