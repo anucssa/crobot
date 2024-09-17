@@ -21,6 +21,21 @@ interface NocoDBCreatedWebhook<ItemType extends DBItem>
   };
 }
 
+export interface NocoDBNestedCreatedWebhook<ItemType extends DBItem> {
+  type: "records.after.insert";
+  data: {
+    table_id: string;
+    table_name: string;
+    rows: Array<{
+      table_id: string;
+      table_name: string;
+      view_id: string;
+      view_name: string;
+      rows: ItemType[];
+    }>;
+  };
+}
+
 interface NocoDBUpdatedWebhook<ItemType extends DBItem>
   extends NocoDBBaseWebhook {
   type: "records.after.update";

@@ -3,9 +3,11 @@ import {
   DBGetRowsResponse,
   MembershipDBItem,
   QuoteDBItem,
+  NocoDBNestedCreatedWebhook,
 } from "./nocodb-types";
 import express, { Express, Request } from "express";
 import { GuildMember, Snowflake } from "discord.js";
+import { sendQuote } from "./commands/quote";
 
 const MEMBER_ROLE_ID = "753524901708693558";
 const LIFE_MEMBER_ROLE_ID = "702889882598506558";
@@ -113,22 +115,24 @@ export async function attachNocoDBWebhookListener(expressApp: Express) {
 
   expressApp.post(
     "/quote",
-    async (request: Request<NocoDBWebhook<QuoteDBItem>>, response) => {
+    async (
+      request: Request<NocoDBNestedCreatedWebhook<QuoteDBItem>>,
+      response,
+    ) => {
       if (request.headers["x-cssa-secret"] != process.env.WEBSOCKET_SECRET) {
         console.warn("Illegal websocket update.");
         response.status(401).send();
         return;
       }
       console.log("Received db webhook.");
-      const webhookBody: NocoDBWebhook<QuoteDBItem> = request.body;
+      const webhookBody: NocoDBNestedCreatedWebhook<QuoteDBItem> = request.body;
 
-      const row = webhookBody.data.rows[0];
+      const row = webhookBody.data.rows[0]?.rows?.[0];
       if (!row) {
         console.error("No quote data in webhook.");
         response.status(204).send();
         return;
       }
-      console.log(webhookBody);
 
       await onQuoteSubmission(row);
 
@@ -256,10 +260,9 @@ export async function onRowDelete(row: GuildMember) {
 }
 
 export async function onQuoteSubmission(row: QuoteDBItem) {
-  // await sendQuote(cssaGuild, {
-  //   message: row.quote,
-  //   timestamp: new Date(),
-  //   quotee: row.author,
-  // });
-  console.log(row);
+  await sendQuote(cssaGuild, {
+    message: row.quote,
+    timestamp: new Date(),
+    quotee: row.author,
+  });
 }
