@@ -6,7 +6,6 @@ import {
 } from "./nocodb-types";
 import express, { Express, Request } from "express";
 import { GuildMember, Snowflake } from "discord.js";
-import { sendQuote } from "./commands/quote";
 
 const MEMBER_ROLE_ID = "753524901708693558";
 const LIFE_MEMBER_ROLE_ID = "702889882598506558";
@@ -256,9 +255,10 @@ export async function onRowDelete(row: GuildMember) {
 }
 
 export async function onQuoteSubmission(row: QuoteDBItem) {
-  await sendQuote(cssaGuild, {
-    message: row.quote,
-    timestamp: new Date(),
-    quotee: row.author,
-  });
+  // await sendQuote(cssaGuild, {
+  //   message: row.quote,
+  //   timestamp: new Date(),
+  //   quotee: row.author,
+  // });
+  console.log(row);
 }
