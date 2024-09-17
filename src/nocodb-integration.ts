@@ -3,7 +3,6 @@ import {
   DBGetRowsResponse,
   MembershipDBItem,
   QuoteDBItem,
-  NocoDBNestedCreatedWebhook,
 } from "./nocodb-types";
 import express, { Express, Request } from "express";
 import { GuildMember, Snowflake } from "discord.js";
@@ -115,19 +114,16 @@ export async function attachNocoDBWebhookListener(expressApp: Express) {
 
   expressApp.post(
     "/quote",
-    async (
-      request: Request<NocoDBNestedCreatedWebhook<QuoteDBItem>>,
-      response,
-    ) => {
+    async (request: Request<NocoDBWebhook<QuoteDBItem>>, response) => {
       if (request.headers["x-cssa-secret"] != process.env.WEBSOCKET_SECRET) {
         console.warn("Illegal websocket update.");
         response.status(401).send();
         return;
       }
       console.log("Received db webhook.");
-      const webhookBody: NocoDBNestedCreatedWebhook<QuoteDBItem> = request.body;
+      const webhookBody: NocoDBWebhook<QuoteDBItem> = request.body;
 
-      const row = webhookBody.data.rows[0]?.rows?.[0];
+      const row = webhookBody.data.rows[0];
       if (!row) {
         console.error("No quote data in webhook.");
         response.status(204).send();
