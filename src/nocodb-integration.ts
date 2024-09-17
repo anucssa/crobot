@@ -1,6 +1,12 @@
-import { NocoDBWebhook, DBGetRowsResponse, DBItem } from "./nocodb-types";
+import {
+  NocoDBWebhook,
+  DBGetRowsResponse,
+  MembershipDBItem,
+  QuoteDBItem,
+} from "./nocodb-types";
 import express, { Express, Request } from "express";
 import { GuildMember, Snowflake } from "discord.js";
+import { sendQuote } from "./commands/quote";
 
 const MEMBER_ROLE_ID = "753524901708693558";
 const LIFE_MEMBER_ROLE_ID = "702889882598506558";
@@ -24,14 +30,14 @@ function transformUsername(
   return [name, Number.parseInt(discriminator, 10)];
 }
 
-interface DBItemDiscord {
-  item: DBItem;
+interface MembershipDBItemWithDiscordGuildMember {
+  item: MembershipDBItem;
   discord: GuildMember;
 }
 
 async function getDatabaseItemDiscord(
-  item: DBItem,
-): Promise<DBItemDiscord | undefined> {
+  item: MembershipDBItem,
+): Promise<MembershipDBItemWithDiscordGuildMember | undefined> {
   try {
     return {
       item,
@@ -48,15 +54,20 @@ export async function refreshDBData() {
   // Force update all discord members
   await Promise.all([cssaGuild.fetch(), cssaGuild.members.fetch()]);
 
-  const databaseResp: DBGetRowsResponse = await fetch(DB_REQUEST_URL, {
-    headers: new Headers({
-      "xc-token": process.env.NOCODB_TOKEN || "",
-    }),
-  }).then((response) => response.json());
+  const databaseResp: DBGetRowsResponse<MembershipDBItem> = await fetch(
+    DB_REQUEST_URL,
+    {
+      headers: new Headers({
+        "xc-token": process.env.NOCODB_TOKEN || "",
+      }),
+    },
+  ).then((response) => response.json());
   const fetchedData = databaseResp.list;
 
   // Associate a discord user for each entry
-  const itemsDiscordPromises: Promise<DBItemDiscord | undefined>[] = [];
+  const itemsDiscordPromises: Promise<
+    MembershipDBItemWithDiscordGuildMember | undefined
+  >[] = [];
   for (const row of fetchedData) {
     itemsDiscordPromises.push(getDatabaseItemDiscord(row));
   }
@@ -102,15 +113,39 @@ export async function attachNocoDBWebhookListener(expressApp: Express) {
   expressApp.use(express.json());
 
   expressApp.post(
-    "/membership/update",
-    async (request: Request<NocoDBWebhook>, response) => {
+    "/quote",
+    async (request: Request<NocoDBWebhook<QuoteDBItem>>, response) => {
       if (request.headers["x-cssa-secret"] != process.env.WEBSOCKET_SECRET) {
         console.warn("Illegal websocket update.");
         response.status(401).send();
         return;
       }
       console.log("Received db webhook.");
-      const webhookBody: NocoDBWebhook = request.body;
+      const webhookBody: NocoDBWebhook<QuoteDBItem> = request.body;
+
+      const row = webhookBody.data.rows[0];
+      if (!row) {
+        console.error("No quote data in webhook.");
+        response.status(204).send();
+        return;
+      }
+
+      await onQuoteSubmission(row);
+
+      response.status(204).send();
+    },
+  );
+
+  expressApp.post(
+    "/membership/update",
+    async (request: Request<NocoDBWebhook<MembershipDBItem>>, response) => {
+      if (request.headers["x-cssa-secret"] != process.env.WEBSOCKET_SECRET) {
+        console.warn("Illegal websocket update.");
+        response.status(401).send();
+        return;
+      }
+      console.log("Received db webhook.");
+      const webhookBody: NocoDBWebhook<MembershipDBItem> = request.body;
 
       // Collect all async operations for better concurrency
       const promises: Promise<void>[] = [];
@@ -208,11 +243,7 @@ export async function performRoleUpdate(
     : member.roles.remove(roleId));
 }
 
-export async function onRowUpdateWebhook(row: DBItem) {
-  getUser(row.discord_username);
-}
-
-export async function onRowUpdate(row: DBItemDiscord) {
+export async function onRowUpdate(row: MembershipDBItemWithDiscordGuildMember) {
   const discord = row.discord;
   await performRoleUpdate(discord, MEMBER_ROLE_ID, "add");
   if (row.item.life_member) {
@@ -222,4 +253,12 @@ export async function onRowUpdate(row: DBItemDiscord) {
 
 export async function onRowDelete(row: GuildMember) {
   await performRoleUpdate(row, MEMBER_ROLE_ID, "remove");
+}
+
+export async function onQuoteSubmission(row: QuoteDBItem) {
+  await sendQuote(cssaGuild, {
+    message: row.quote,
+    timestamp: new Date(),
+    quotee: row.author,
+  });
 }
