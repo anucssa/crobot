@@ -128,6 +128,7 @@ export async function attachNocoDBWebhookListener(expressApp: Express) {
         response.status(204).send();
         return;
       }
+      console.log(webhookBody);
 
       await onQuoteSubmission(row);
 
