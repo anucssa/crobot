@@ -1,14 +1,34 @@
 import type { Express } from "express";
-import { Collection, Message } from "discord.js";
+import { Collection, Message, MessageMentions } from "discord.js";
 import { Quote } from "./commands/quote";
 
 const quotes: Collection<string, Quote> = new Collection();
+
+export function replaceMentionsWithNames(
+  message: string,
+  mentions: MessageMentions<true>,
+): string {
+  for (const [id, user] of mentions.parsedUsers.entries()) {
+    message = message.replaceAll(
+      new RegExp(`<@!?${id}>`, "g"),
+      "@" +
+        (mentions.members.find((m) => m.user.id === user.id)?.displayName ??
+          user.displayName ??
+          user.username),
+    );
+  }
+  return message;
+}
 
 export function convertMessageToQuote(
   message: Message<true>,
 ): Quote | undefined {
   // Check if the message is an embed
-  if (message.embeds.length === 1) {
+  if (
+    message.embeds.length === 1 &&
+    message.embeds[0].author !== null &&
+    message.embeds[0].author.name.includes("Quote")
+  ) {
     const embed = message.embeds[0];
     let author: Quote["quotee"] = embed.title ?? undefined;
     if (author == "Anonymous Quote") {
@@ -26,11 +46,17 @@ export function convertMessageToQuote(
       return undefined;
     }
     const quoteBody = messageContent;
-    if (message.mentions.members.size > 0) {
+    if (message.mentions.parsedUsers.size > 0) {
       return {
-        message: quoteBody,
-        quotee: message.mentions.members
-          .map((member) => member.displayName)
+        message: replaceMentionsWithNames(quoteBody, message.mentions),
+        quotee: message.mentions.parsedUsers
+          .map(
+            (user) =>
+              message.mentions.members.find((m) => m.user.id === user.id)
+                ?.displayName ??
+              user.displayName ??
+              user.username,
+          )
           .join(", "),
         timestamp: message.createdAt,
       };
