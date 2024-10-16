@@ -11,6 +11,7 @@ import { attachNocoDBWebhookListener } from "./nocodb-integration";
 import { startServerIcon } from "./server-icon";
 import registerCommands from "./command-registry";
 import addStageOne from "./secret";
+import { attachQuotesServer } from "./quotes-server";
 
 const PORT = 8080;
 globalThis.appMaintainers = [];
@@ -32,6 +33,7 @@ async function main(): Promise<void> {
   // Initialise the express app and attach the door server
   const expressApp = express();
   await attachDoorServer(expressApp);
+  await attachQuotesServer(expressApp);
   await attachNocoDBWebhookListener(expressApp);
 
   // Start the server icon and add reaction events
