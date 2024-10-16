@@ -95,9 +95,9 @@ export async function attachQuotesServer(app: Express) {
       response.set("Content-Type", "application/json");
       response.send(
         JSON.stringify({
-          quotes: [...quotes.values()].sort(
-            (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
-          ),
+          quotes: [...quotes.entries()]
+            .map(([messageId, quote]) => ({ messageId, ...quote }))
+            .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()),
         }),
       );
     });
