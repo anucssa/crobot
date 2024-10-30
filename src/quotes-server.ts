@@ -26,8 +26,8 @@ export function convertMessageToQuote(
   // Check if the message is an embed
   if (
     message.embeds.length === 1 &&
-    message.embeds[0].author !== null &&
-    message.embeds[0].author.name.includes("Quote")
+    message.embeds[0].title !== null &&
+    message.embeds[0].title.includes("Quote")
   ) {
     const embed = message.embeds[0];
     let author: Quote["quotee"] = embed.title ?? undefined;
