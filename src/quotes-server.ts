@@ -91,19 +91,19 @@ export async function refreshQuotes() {
   let hitCachedMessage = false;
   let messages = await quotesChannel.messages.fetch({
     limit: 100,
-    cache: false,
   });
   while (!hitCachedMessage && messages.size > 0) {
+    messages.sort((a, b) => b.createdTimestamp - a.createdTimestamp);
     for (const message of messages.values()) {
       const quote = convertMessageToQuote(message);
       if (quote !== undefined) {
         if (quotes.has(message.id)) {
           if (!hitCachedMessage) {
-            console.log("Hit cached message");
+            console.log(`Hit cached message - ${message.id}`);
           }
           hitCachedMessage = true;
         } else {
-          console.log("Adding new quote");
+          console.log(`Adding new quote - ${message.id}`);
         }
         quotes.set(message.id, quote);
       }
