@@ -78,6 +78,7 @@ export function convertMessageToQuote(
 }
 
 export async function refreshQuotes() {
+  console.log("Refreshing quotes");
   const quotesChannel = await globalThis.cssaGuild.channels.fetch(
     "1169166790094491678",
   );
@@ -88,13 +89,21 @@ export async function refreshQuotes() {
   }
   // Start fetching recent top-level messages
   let hitCachedMessage = false;
-  let messages = await quotesChannel.messages.fetch({ limit: 100 });
+  let messages = await quotesChannel.messages.fetch({
+    limit: 100,
+    cache: false,
+  });
   while (!hitCachedMessage && messages.size > 0) {
     for (const message of messages.values()) {
       const quote = convertMessageToQuote(message);
       if (quote !== undefined) {
         if (quotes.has(message.id)) {
+          if (!hitCachedMessage) {
+            console.log("Hit cached message");
+          }
           hitCachedMessage = true;
+        } else {
+          console.log("Adding new quote");
         }
         quotes.set(message.id, quote);
       }
