@@ -13,7 +13,7 @@ const LIFE_MEMBER_ROLE_ID = "702889882598506558";
 const CHALLENGE_25_ROLE_ID = "1340825498502041743";
 const CSSA_SERVER_ID = process.env.CSSA_SERVER as Snowflake;
 const DB_REQUEST_URL =
-  "https://db.cssa.club/api/v2/tables/mr98mt60g35hk2p/records?fields=id%2Cdiscord_username%2Clife_member%2Ccommittee%2Ccro&where=where%3D%28discord_username%2Cisnot%2Cnull%29&limit=1000&shuffle=0&offset=0";
+  "https://db.cssa.club/api/v2/tables/mr98mt60g35hk2p/records?fields=id%2Cdiscord_username%2Clife_member%2Ccommittee%2Ccro%2Cchallenge_completion&where=where%3D%28discord_username%2Cisnot%2Cnull%29&limit=1000&shuffle=0&offset=0";
 
 if (!CSSA_SERVER_ID) throw new Error("CSSA_SERVER not set.");
 
