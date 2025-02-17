@@ -89,6 +89,7 @@ export interface MembershipDBItem extends DBItem {
   life_member: boolean;
   committee: boolean;
   cro: boolean;
+  challenge_completion: boolean;
 }
 
 export interface QuoteDBItem extends DBItem {
