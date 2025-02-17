@@ -246,6 +246,8 @@ export async function performRoleUpdate(
 
 export async function onRowUpdate(row: MembershipDBItemWithDiscordGuildMember) {
   const discord = row.discord;
+  if (!discord) return
+
   await performRoleUpdate(discord, MEMBER_ROLE_ID, "add");
   if (row.item.life_member) {
     await performRoleUpdate(discord, LIFE_MEMBER_ROLE_ID, "add");
