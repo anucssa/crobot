@@ -1,4 +1,4 @@
-import { Client, IntentsBitField } from "discord.js";
+import { Client, IntentsBitField, Partials } from "discord.js";
 import { config } from "dotenv";
 
 export async function initDiscord(): Promise<Client<true>> {
@@ -12,7 +12,9 @@ export async function initDiscord(): Promise<Client<true>> {
         IntentsBitField.Flags.MessageContent,
         IntentsBitField.Flags.GuildMessages,
         IntentsBitField.Flags.GuildEmojisAndStickers,
+        IntentsBitField.Flags.GuildMessageReactions
       ],
+      partials: [Partials.Message, Partials.Channel, Partials.Reaction]
     });
 
     client.on("ready", () => {

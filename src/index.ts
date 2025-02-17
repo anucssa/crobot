@@ -12,6 +12,7 @@ import { startServerIcon } from "./server-icon";
 import registerCommands from "./command-registry";
 import addStageOne from "./secret";
 import { attachQuotesServer } from "./quotes-server";
+import { attatchNegativeRoles } from "./negative-roles";
 
 const PORT = 8080;
 globalThis.appMaintainers = [];
@@ -32,16 +33,17 @@ async function main(): Promise<void> {
 
   // Initialise the express app and attach the door server
   const expressApp = express();
-  await attachDoorServer(expressApp);
-  await attachQuotesServer(expressApp);
-  await attachNocoDBWebhookListener(expressApp);
+  // await attachDoorServer(expressApp);
+  // await attachQuotesServer(expressApp);
+  // await attachNocoDBWebhookListener(expressApp);
+  await attatchNegativeRoles()
 
   // Start the server icon and add reaction events
   startServerIcon();
   addReactionEvents();
 
   // Make all other http requests go to cssa.club
-  expressApp.get("*", function (_, response) {
+  expressApp.get("*", function(_, response) {
     response.redirect("https://cssa.club/");
   });
 
