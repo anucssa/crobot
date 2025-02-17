@@ -33,9 +33,9 @@ async function main(): Promise<void> {
 
   // Initialise the express app and attach the door server
   const expressApp = express();
-  // await attachDoorServer(expressApp);
-  // await attachQuotesServer(expressApp);
-  // await attachNocoDBWebhookListener(expressApp);
+  await attachDoorServer(expressApp);
+  await attachQuotesServer(expressApp);
+  await attachNocoDBWebhookListener(expressApp);
   await attatchNegativeRoles()
 
   // Start the server icon and add reaction events
