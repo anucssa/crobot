@@ -2,7 +2,7 @@ import { ChannelType, Events, GuildMember, MessageReaction, User } from "discord
 
 const reactions = [
   { role: '1340905832065400892', channel: '758584741846319124', message: '1340905282565574729', emoji: '644317764470702100' },
-  { role: '1340825385444708372', channel: '758584741846319124', message: '1340905282565574729', emoji: '897776954751741' }
+  { role: '1340825385444708372', channel: '758584741846319124', message: '1340905282565574729', emoji: '897776954751741952' }
 ]
 
 export async function attatchNegativeRoles() {
