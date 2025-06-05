@@ -27,7 +27,7 @@ export function startServerIcon(): void {
     // Fetch the list of icons
     const repoContents = await octokit.rest.repos.getContent({
       owner: "anucssa",
-      repo: "cssa-pride-icons",
+      repo: "cssa-server-icons",
       path: "icons",
     });
     if (repoContents.status !== 200) {
