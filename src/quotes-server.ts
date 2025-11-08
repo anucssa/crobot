@@ -12,9 +12,9 @@ export function replaceMentionsWithNames(
     message = message.replaceAll(
       new RegExp(`<@!?${id}>`, "g"),
       "@" +
-        (mentions.members.find((m) => m.user.id === user.id)?.displayName ??
-          user.displayName ??
-          user.username),
+      (mentions.members.find((m) => m.user.id === user.id)?.displayName ??
+        user.displayName ??
+        user.username),
     );
   }
   return message;
@@ -124,7 +124,7 @@ export async function refreshQuotes() {
 }
 
 export async function attachQuotesServer(app: Express) {
-  await refreshQuotes();
+  refreshQuotes().catch(error => console.warn(`Failed to refresh quotes: ${error}`));
   app.get("/quotes", (_, response) => {
     refreshQuotes().then(() => {
       response.set("Content-Type", "application/json");

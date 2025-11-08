@@ -52,9 +52,6 @@ async function getDatabaseItemDiscord(
 export async function refreshDBData() {
   // Fire events for onRowCreate, onRowUpdate, onRowDelete as necessary
 
-  // Force update all discord members
-  await Promise.all([cssaGuild.fetch(), cssaGuild.members.fetch()]);
-
   const databaseResp: DBGetRowsResponse<MembershipDBItem> = await fetch(
     DB_REQUEST_URL,
     {
@@ -109,7 +106,7 @@ export async function refreshDBData() {
 }
 
 export async function attachNocoDBWebhookListener(expressApp: Express) {
-  await refreshDBData();
+  refreshDBData().catch(error => console.warn(`Failed to refresh DB data: ${error}`));
 
   expressApp.use(express.json());
 
@@ -204,21 +201,16 @@ class MemberNotFoundError extends Error { }
 
 async function getUser(rawUsername: string): Promise<GuildMember> {
   const [username, discriminator] = transformUsername(rawUsername);
-  for (const member of cssaGuild.members.cache.values()) {
-    if (
-      member.user.username === username &&
-      member.user.discriminator === discriminator.toString(10)
-    )
-      return member;
-  }
+  const disc = discriminator.toString(10);
+
+  let member = cssaGuild.members.cache.find(m => m.user.username === username && m.user.discriminator === disc);
+  if (member) return member;
+
   const fetchedMembers = await cssaGuild.members.fetch({ query: username });
-  for (const member of fetchedMembers.values()) {
-    if (
-      member.user.username === username &&
-      member.user.discriminator === discriminator.toString(10)
-    )
-      return member;
-  }
+  member = fetchedMembers.find(m => m.user.username === username && m.user.discriminator === disc);
+
+  if (member) return member;
+
   console.log(`Couldn't find member in guild: ${username}#${discriminator}`);
   throw new MemberNotFoundError("Couldn't find member in guild: " + username);
 }
